@@ -223,4 +223,48 @@ class DepartmentServiceTest {
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("Manager not found");
     }
+
+    @Test
+    void updateDepartment_WithBlankName_ShouldNotUpdateName() {
+        // Given
+        String originalName = department.getName();
+        UpdateDepartmentRequest request = new UpdateDepartmentRequest("   ", null);
+        when(departmentRepository.findById(department.getId())).thenReturn(Optional.of(department));
+        when(departmentRepository.save(any(Department.class))).thenReturn(department);
+
+        // When
+        DepartmentResponse response =
+                departmentService.updateDepartment(department.getId(), request);
+
+        // Then
+        assertThat(response).isNotNull();
+        assertThat(department.getName()).isEqualTo(originalName); // Name should remain unchanged
+        verify(departmentRepository).save(any(Department.class));
+    }
+
+    @Test
+    void createDepartment_WithoutManager_ShouldCreateDepartmentWithoutManager() {
+        // Given
+        CreateDepartmentRequest request = new CreateDepartmentRequest("Engineering", "ENG", null);
+        Department departmentWithoutManager = new Department();
+        departmentWithoutManager.setId(UUID.randomUUID());
+        departmentWithoutManager.setName("Engineering");
+        departmentWithoutManager.setCode("ENG");
+        departmentWithoutManager.setCreatedAt(LocalDateTime.now());
+        departmentWithoutManager.setUpdatedAt(LocalDateTime.now());
+
+        when(departmentRepository.existsByCode("ENG")).thenReturn(false);
+        when(departmentRepository.save(any(Department.class))).thenReturn(departmentWithoutManager);
+
+        // When
+        DepartmentResponse response = departmentService.createDepartment(request);
+
+        // Then
+        assertThat(response).isNotNull();
+        assertThat(response.getName()).isEqualTo("Engineering");
+        assertThat(response.getCode()).isEqualTo("ENG");
+        assertThat(response.getManagerId()).isNull();
+        assertThat(response.getManagerName()).isNull();
+        verify(departmentRepository).save(any(Department.class));
+    }
 }

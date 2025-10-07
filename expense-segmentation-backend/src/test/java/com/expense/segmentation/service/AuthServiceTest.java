@@ -11,6 +11,7 @@ import com.expense.segmentation.dto.AuthResponse;
 import com.expense.segmentation.dto.LoginRequest;
 import com.expense.segmentation.dto.RegisterRequest;
 import com.expense.segmentation.dto.UserResponse;
+import com.expense.segmentation.model.Department;
 import com.expense.segmentation.model.Role;
 import com.expense.segmentation.model.RoleType;
 import com.expense.segmentation.model.User;
@@ -256,6 +257,40 @@ class AuthServiceTest {
         assertThatThrownBy(() -> authService.getCurrentUser())
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("User not found");
+
+        verify(userRepository).findByEmail("john@example.com");
+
+        // Clean up
+        SecurityContextHolder.clearContext();
+    }
+
+    @Test
+    void getCurrentUser_WithDepartment_ShouldIncludeDepartmentInfo() {
+        // Given
+        Department department = new Department();
+        department.setId(UUID.randomUUID());
+        department.setName("Engineering");
+        department.setCode("ENG");
+
+        user.setDepartment(department);
+
+        Authentication authentication = mock(Authentication.class);
+        SecurityContext securityContext = mock(SecurityContext.class);
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.getName()).thenReturn("john@example.com");
+        SecurityContextHolder.setContext(securityContext);
+
+        when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.of(user));
+
+        // When
+        UserResponse response = authService.getCurrentUser();
+
+        // Then
+        assertThat(response).isNotNull();
+        assertThat(response.getDepartmentId()).isEqualTo(department.getId());
+        assertThat(response.getDepartmentName()).isEqualTo("Engineering");
+        assertThat(response.getEmail()).isEqualTo("john@example.com");
 
         verify(userRepository).findByEmail("john@example.com");
 
