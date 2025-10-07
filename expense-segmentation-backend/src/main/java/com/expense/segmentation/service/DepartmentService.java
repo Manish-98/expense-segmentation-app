@@ -7,13 +7,12 @@ import com.expense.segmentation.model.Department;
 import com.expense.segmentation.model.User;
 import com.expense.segmentation.repository.DepartmentRepository;
 import com.expense.segmentation.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -26,7 +25,8 @@ public class DepartmentService {
     public DepartmentResponse createDepartment(CreateDepartmentRequest request) {
         // Check if department code already exists
         if (departmentRepository.existsByCode(request.getCode())) {
-            throw new RuntimeException("Department with code " + request.getCode() + " already exists");
+            throw new RuntimeException(
+                    "Department with code " + request.getCode() + " already exists");
         }
 
         Department department = new Department();
@@ -35,8 +35,14 @@ public class DepartmentService {
 
         // Set manager if provided
         if (request.getManagerId() != null) {
-            User manager = userRepository.findById(request.getManagerId())
-                    .orElseThrow(() -> new RuntimeException("Manager not found with id: " + request.getManagerId()));
+            User manager =
+                    userRepository
+                            .findById(request.getManagerId())
+                            .orElseThrow(
+                                    () ->
+                                            new RuntimeException(
+                                                    "Manager not found with id: "
+                                                            + request.getManagerId()));
             department.setManager(manager);
         }
 
@@ -53,15 +59,21 @@ public class DepartmentService {
 
     @Transactional(readOnly = true)
     public DepartmentResponse getDepartmentById(UUID id) {
-        Department department = departmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Department not found with id: " + id));
+        Department department =
+                departmentRepository
+                        .findById(id)
+                        .orElseThrow(
+                                () -> new RuntimeException("Department not found with id: " + id));
         return mapToDepartmentResponse(department);
     }
 
     @Transactional
     public DepartmentResponse updateDepartment(UUID id, UpdateDepartmentRequest request) {
-        Department department = departmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Department not found with id: " + id));
+        Department department =
+                departmentRepository
+                        .findById(id)
+                        .orElseThrow(
+                                () -> new RuntimeException("Department not found with id: " + id));
 
         // Update name if provided
         if (request.getName() != null && !request.getName().isBlank()) {
@@ -70,8 +82,14 @@ public class DepartmentService {
 
         // Update manager if provided
         if (request.getManagerId() != null) {
-            User manager = userRepository.findById(request.getManagerId())
-                    .orElseThrow(() -> new RuntimeException("Manager not found with id: " + request.getManagerId()));
+            User manager =
+                    userRepository
+                            .findById(request.getManagerId())
+                            .orElseThrow(
+                                    () ->
+                                            new RuntimeException(
+                                                    "Manager not found with id: "
+                                                            + request.getManagerId()));
             department.setManager(manager);
         }
 

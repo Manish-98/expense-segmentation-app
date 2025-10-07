@@ -9,5 +9,4 @@ public class ExpenseSegmentationApplication {
     public static void main(String[] args) {
         SpringApplication.run(ExpenseSegmentationApplication.class, args);
     }
-
 }

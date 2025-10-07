@@ -1,24 +1,21 @@
 package com.expense.segmentation.repository;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.expense.segmentation.model.Department;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 @DataJpaTest
 class DepartmentRepositoryTest {
 
-    @Autowired
-    private TestEntityManager entityManager;
+    @Autowired private TestEntityManager entityManager;
 
-    @Autowired
-    private DepartmentRepository departmentRepository;
+    @Autowired private DepartmentRepository departmentRepository;
 
     private Department itDepartment;
     private Department hrDepartment;
@@ -137,7 +134,8 @@ class DepartmentRepositoryTest {
 
         // Then
         assertThat(departments).hasSize(2);
-        assertThat(departments).extracting(Department::getCode)
+        assertThat(departments)
+                .extracting(Department::getCode)
                 .containsExactlyInAnyOrder("IT", "HR");
     }
 

@@ -1,5 +1,11 @@
 package com.expense.segmentation.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+
 import com.expense.segmentation.config.JwtTokenUtil;
 import com.expense.segmentation.dto.AuthResponse;
 import com.expense.segmentation.dto.LoginRequest;
@@ -11,6 +17,10 @@ import com.expense.segmentation.model.User;
 import com.expense.segmentation.model.UserStatus;
 import com.expense.segmentation.repository.RoleRepository;
 import com.expense.segmentation.repository.UserRepository;
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,40 +37,22 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
-
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
-    @Mock
-    private UserRepository userRepository;
+    @Mock private UserRepository userRepository;
 
-    @Mock
-    private RoleRepository roleRepository;
+    @Mock private RoleRepository roleRepository;
 
-    @Mock
-    private PasswordEncoder passwordEncoder;
+    @Mock private PasswordEncoder passwordEncoder;
 
-    @Mock
-    private JwtTokenUtil jwtTokenUtil;
+    @Mock private JwtTokenUtil jwtTokenUtil;
 
-    @Mock
-    private AuthenticationManager authenticationManager;
+    @Mock private AuthenticationManager authenticationManager;
 
-    @Mock
-    private CustomUserDetailsService userDetailsService;
+    @Mock private CustomUserDetailsService userDetailsService;
 
-    @InjectMocks
-    private AuthService authService;
+    @InjectMocks private AuthService authService;
 
     private RegisterRequest registerRequest;
     private LoginRequest loginRequest;
@@ -88,11 +80,14 @@ class AuthServiceTest {
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
 
-        userDetails = org.springframework.security.core.userdetails.User.builder()
-                .username(user.getEmail())
-                .password(user.getPasswordHash())
-                .authorities(Collections.singletonList(new SimpleGrantedAuthority("ROLE_EMPLOYEE")))
-                .build();
+        userDetails =
+                org.springframework.security.core.userdetails.User.builder()
+                        .username(user.getEmail())
+                        .password(user.getPasswordHash())
+                        .authorities(
+                                Collections.singletonList(
+                                        new SimpleGrantedAuthority("ROLE_EMPLOYEE")))
+                        .build();
     }
 
     @Test
@@ -100,7 +95,8 @@ class AuthServiceTest {
         // Given
         when(userRepository.existsByEmail(registerRequest.getEmail())).thenReturn(false);
         when(roleRepository.findByName(RoleType.EMPLOYEE)).thenReturn(Optional.of(employeeRole));
-        when(passwordEncoder.encode(registerRequest.getPassword())).thenReturn("$2a$10$hashedPassword");
+        when(passwordEncoder.encode(registerRequest.getPassword()))
+                .thenReturn("$2a$10$hashedPassword");
         when(userRepository.save(any(User.class))).thenReturn(user);
         when(userDetailsService.loadUserByUsername(user.getEmail())).thenReturn(userDetails);
         when(jwtTokenUtil.generateToken(userDetails)).thenReturn("test-jwt-token");
@@ -158,8 +154,9 @@ class AuthServiceTest {
     @Test
     void login_WithValidCredentials_ShouldReturnAuthResponse() {
         // Given
-        Authentication authentication = new UsernamePasswordAuthenticationToken(
-                userDetails, null, userDetails.getAuthorities());
+        Authentication authentication =
+                new UsernamePasswordAuthenticationToken(
+                        userDetails, null, userDetails.getAuthorities());
 
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(authentication);
@@ -198,8 +195,9 @@ class AuthServiceTest {
     @Test
     void login_WhenUserNotFoundAfterAuthentication_ShouldThrowException() {
         // Given
-        Authentication authentication = new UsernamePasswordAuthenticationToken(
-                userDetails, null, userDetails.getAuthorities());
+        Authentication authentication =
+                new UsernamePasswordAuthenticationToken(
+                        userDetails, null, userDetails.getAuthorities());
 
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(authentication);

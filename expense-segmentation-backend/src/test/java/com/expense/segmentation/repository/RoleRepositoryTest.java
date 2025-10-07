@@ -1,25 +1,22 @@
 package com.expense.segmentation.repository;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.expense.segmentation.model.Role;
 import com.expense.segmentation.model.RoleType;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 @DataJpaTest
 class RoleRepositoryTest {
 
-    @Autowired
-    private TestEntityManager entityManager;
+    @Autowired private TestEntityManager entityManager;
 
-    @Autowired
-    private RoleRepository roleRepository;
+    @Autowired private RoleRepository roleRepository;
 
     private Role employeeRole;
     private Role managerRole;
@@ -99,7 +96,8 @@ class RoleRepositoryTest {
 
         // Then
         assertThat(roles).hasSize(2);
-        assertThat(roles).extracting(Role::getName)
+        assertThat(roles)
+                .extracting(Role::getName)
                 .containsExactlyInAnyOrder(RoleType.EMPLOYEE, RoleType.MANAGER);
     }
 

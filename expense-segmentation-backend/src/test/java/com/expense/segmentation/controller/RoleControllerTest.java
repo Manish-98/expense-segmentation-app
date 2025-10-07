@@ -1,11 +1,18 @@
 package com.expense.segmentation.controller;
 
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.expense.segmentation.config.JwtAuthenticationFilter;
 import com.expense.segmentation.config.JwtTokenUtil;
 import com.expense.segmentation.dto.RoleResponse;
 import com.expense.segmentation.model.RoleType;
 import com.expense.segmentation.service.CustomUserDetailsService;
 import com.expense.segmentation.service.RoleService;
+import java.util.Arrays;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,32 +22,19 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Arrays;
-import java.util.UUID;
-
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 @WebMvcTest(RoleController.class)
 @AutoConfigureMockMvc(addFilters = false)
 class RoleControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+    @Autowired private MockMvc mockMvc;
 
-    @MockBean
-    private RoleService roleService;
+    @MockBean private RoleService roleService;
 
-    @MockBean
-    private JwtTokenUtil jwtTokenUtil;
+    @MockBean private JwtTokenUtil jwtTokenUtil;
 
-    @MockBean
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
+    @MockBean private JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    @MockBean
-    private CustomUserDetailsService customUserDetailsService;
+    @MockBean private CustomUserDetailsService customUserDetailsService;
 
     private RoleResponse employeeRole;
     private RoleResponse adminRole;

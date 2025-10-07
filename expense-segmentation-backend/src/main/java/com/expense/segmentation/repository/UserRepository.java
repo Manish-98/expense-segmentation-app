@@ -2,12 +2,11 @@ package com.expense.segmentation.repository;
 
 import com.expense.segmentation.model.User;
 import com.expense.segmentation.model.UserStatus;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, UUID> {
@@ -23,5 +22,4 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     List<User> findByRoleId(UUID roleId);
 
     List<User> findByDepartmentIdAndStatus(UUID departmentId, UserStatus status);
-
 }

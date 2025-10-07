@@ -1,37 +1,33 @@
 package com.expense.segmentation.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.expense.segmentation.model.Role;
 import com.expense.segmentation.model.RoleType;
 import com.expense.segmentation.model.User;
 import com.expense.segmentation.model.UserStatus;
 import com.expense.segmentation.repository.UserRepository;
+import java.time.LocalDateTime;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-
-import java.time.LocalDateTime;
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class CustomUserDetailsServiceTest {
 
-    @Mock
-    private UserRepository userRepository;
+    @Mock private UserRepository userRepository;
 
-    @InjectMocks
-    private CustomUserDetailsService customUserDetailsService;
+    @InjectMocks private CustomUserDetailsService customUserDetailsService;
 
     private User user;
     private Role employeeRole;
@@ -67,9 +63,7 @@ class CustomUserDetailsServiceTest {
         assertThat(userDetails.getUsername()).isEqualTo("john@example.com");
         assertThat(userDetails.getPassword()).isEqualTo("$2a$10$hashedPassword");
         assertThat(userDetails.getAuthorities()).hasSize(1);
-        assertThat(userDetails.getAuthorities().stream()
-                .map(auth -> auth.getAuthority())
-                .toList())
+        assertThat(userDetails.getAuthorities().stream().map(auth -> auth.getAuthority()).toList())
                 .contains("ROLE_EMPLOYEE");
 
         verify(userRepository).findByEmail("john@example.com");
@@ -81,7 +75,10 @@ class CustomUserDetailsServiceTest {
         when(userRepository.findByEmail("nonexistent@example.com")).thenReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> customUserDetailsService.loadUserByUsername("nonexistent@example.com"))
+        assertThatThrownBy(
+                        () ->
+                                customUserDetailsService.loadUserByUsername(
+                                        "nonexistent@example.com"))
                 .isInstanceOf(UsernameNotFoundException.class)
                 .hasMessage("User not found with email: nonexistent@example.com");
 
@@ -102,9 +99,7 @@ class CustomUserDetailsServiceTest {
         UserDetails userDetails = customUserDetailsService.loadUserByUsername("john@example.com");
 
         // Then
-        assertThat(userDetails.getAuthorities().stream()
-                .map(auth -> auth.getAuthority())
-                .toList())
+        assertThat(userDetails.getAuthorities().stream().map(auth -> auth.getAuthority()).toList())
                 .contains("ROLE_MANAGER");
     }
 
@@ -122,9 +117,7 @@ class CustomUserDetailsServiceTest {
         UserDetails userDetails = customUserDetailsService.loadUserByUsername("john@example.com");
 
         // Then
-        assertThat(userDetails.getAuthorities().stream()
-                .map(auth -> auth.getAuthority())
-                .toList())
+        assertThat(userDetails.getAuthorities().stream().map(auth -> auth.getAuthority()).toList())
                 .contains("ROLE_ADMIN");
     }
 

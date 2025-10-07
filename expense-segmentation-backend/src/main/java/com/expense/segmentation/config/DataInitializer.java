@@ -45,5 +45,4 @@ public class DataInitializer implements CommandLineRunner {
             case OWNER -> "Business owner with complete control";
         };
     }
-
 }

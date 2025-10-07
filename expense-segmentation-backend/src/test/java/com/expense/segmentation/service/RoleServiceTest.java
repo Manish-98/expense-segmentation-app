@@ -1,9 +1,15 @@
 package com.expense.segmentation.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
+
 import com.expense.segmentation.dto.RoleResponse;
 import com.expense.segmentation.model.Role;
 import com.expense.segmentation.model.RoleType;
 import com.expense.segmentation.repository.RoleRepository;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,21 +17,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 class RoleServiceTest {
 
-    @Mock
-    private RoleRepository roleRepository;
+    @Mock private RoleRepository roleRepository;
 
-    @InjectMocks
-    private RoleService roleService;
+    @InjectMocks private RoleService roleService;
 
     private Role employeeRole;
     private Role adminRole;

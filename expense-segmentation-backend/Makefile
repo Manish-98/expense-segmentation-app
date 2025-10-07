@@ -1,8 +1,11 @@
-.PHONY: help build up down start stop restart logs clean test ps db-shell app-shell health
+.PHONY: help build up down start stop restart logs clean test ps db-shell app-shell health \
+        format format-check coverage coverage-verify sonar gradle-build
 
 # Default target
 help:
 	@echo "Available commands:"
+	@echo ""
+	@echo "Docker Commands:"
 	@echo "  make build        - Build Docker images"
 	@echo "  make up           - Start all services (build + run)"
 	@echo "  make down         - Stop and remove all containers"
@@ -14,11 +17,23 @@ help:
 	@echo "  make logs-db      - View database logs"
 	@echo "  make ps           - List running containers"
 	@echo "  make clean        - Remove containers, volumes, and images"
-	@echo "  make test         - Run tests locally"
+	@echo ""
+	@echo "Development Commands:"
+	@echo "  make test         - Run tests"
+	@echo "  make dev          - Run application locally (without Docker)"
+	@echo "  make gradle-build - Full Gradle build (tests + coverage + format check)"
+	@echo ""
+	@echo "Code Quality Commands:"
+	@echo "  make format       - Auto-format code with Spotless"
+	@echo "  make format-check - Check code formatting"
+	@echo "  make coverage     - Generate test coverage report"
+	@echo "  make coverage-verify - Verify coverage meets 90% threshold"
+	@echo "  make sonar        - Run SonarQube analysis"
+	@echo ""
+	@echo "Utility Commands:"
 	@echo "  make db-shell     - Access PostgreSQL shell"
 	@echo "  make app-shell    - Access application container shell"
 	@echo "  make health       - Check application health"
-	@echo "  make dev          - Run application locally (without Docker)"
 
 # Build Docker images
 build:
@@ -96,3 +111,36 @@ rebuild-app:
 	@echo "Application rebuilt and restarted"
 	@sleep 5
 	@make health
+
+# Full Gradle build with all checks
+gradle-build:
+	./gradlew build
+	@echo "\n✅ Build completed with tests, coverage, and format checks"
+
+# Auto-format code with Spotless
+format:
+	./gradlew spotlessApply
+	@echo "✅ Code formatted successfully"
+
+# Check code formatting
+format-check:
+	./gradlew spotlessCheck
+
+# Generate test coverage report
+coverage:
+	./gradlew jacocoTestReport
+	@echo "\n📊 Coverage report generated at: build/reports/jacoco/index.html"
+	@echo "Open it with: open build/reports/jacoco/index.html"
+
+# Verify coverage meets threshold (90%)
+coverage-verify:
+	./gradlew jacocoTestCoverageVerification
+	@echo "✅ Coverage verification passed (90% threshold)"
+
+# Run SonarQube analysis (requires SonarQube server running)
+sonar:
+	@echo "Starting SonarQube analysis..."
+	@echo "Ensure SonarQube is running at http://localhost:9000"
+	./gradlew sonar
+	@echo "✅ SonarQube analysis completed"
+	@echo "View results at: http://localhost:9000"

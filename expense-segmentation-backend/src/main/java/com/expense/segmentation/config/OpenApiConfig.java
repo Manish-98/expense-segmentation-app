@@ -18,23 +18,34 @@ public class OpenApiConfig {
         final String securitySchemeName = "bearerAuth";
 
         return new OpenAPI()
-                .info(new Info()
-                        .title("Expense Segmentation API")
-                        .description("REST API for expense segmentation and management system with role-based access control")
-                        .version("1.0.0")
-                        .contact(new Contact()
-                                .name("Expense Segmentation Team")
-                                .email("support@expense-segmentation.com"))
-                        .license(new License()
-                                .name("Apache 2.0")
-                                .url("https://www.apache.org/licenses/LICENSE-2.0.html")))
+                .info(
+                        new Info()
+                                .title("Expense Segmentation API")
+                                .description(
+                                        "REST API for expense segmentation and management system"
+                                                + " with role-based access control")
+                                .version("1.0.0")
+                                .contact(
+                                        new Contact()
+                                                .name("Expense Segmentation Team")
+                                                .email("support@expense-segmentation.com"))
+                                .license(
+                                        new License()
+                                                .name("Apache 2.0")
+                                                .url(
+                                                        "https://www.apache.org/licenses/LICENSE-2.0.html")))
                 .addSecurityItem(new SecurityRequirement().addList(securitySchemeName))
-                .components(new Components()
-                        .addSecuritySchemes(securitySchemeName, new SecurityScheme()
-                                .name(securitySchemeName)
-                                .type(SecurityScheme.Type.HTTP)
-                                .scheme("bearer")
-                                .bearerFormat("JWT")
-                                .description("Enter JWT Bearer token (obtain from /auth/login or /auth/register)")));
+                .components(
+                        new Components()
+                                .addSecuritySchemes(
+                                        securitySchemeName,
+                                        new SecurityScheme()
+                                                .name(securitySchemeName)
+                                                .type(SecurityScheme.Type.HTTP)
+                                                .scheme("bearer")
+                                                .bearerFormat("JWT")
+                                                .description(
+                                                        "Enter JWT Bearer token (obtain from"
+                                                            + " /auth/login or /auth/register)")));
     }
 }

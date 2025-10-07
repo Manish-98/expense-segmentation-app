@@ -40,8 +40,10 @@ public class AuthService {
         }
 
         // Get default EMPLOYEE role
-        Role employeeRole = roleRepository.findByName(RoleType.EMPLOYEE)
-                .orElseThrow(() -> new RuntimeException("Default EMPLOYEE role not found"));
+        Role employeeRole =
+                roleRepository
+                        .findByName(RoleType.EMPLOYEE)
+                        .orElseThrow(() -> new RuntimeException("Default EMPLOYEE role not found"));
 
         // Create new user
         User user = new User();
@@ -64,9 +66,10 @@ public class AuthService {
 
     public AuthResponse login(LoginRequest request) {
         // Authenticate user
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-        );
+        Authentication authentication =
+                authenticationManager.authenticate(
+                        new UsernamePasswordAuthenticationToken(
+                                request.getEmail(), request.getPassword()));
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
@@ -75,8 +78,10 @@ public class AuthService {
         String token = jwtTokenUtil.generateToken(userDetails);
 
         // Get user details
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user =
+                userRepository
+                        .findByEmail(request.getEmail())
+                        .orElseThrow(() -> new RuntimeException("User not found"));
 
         UserResponse userResponse = mapToUserResponse(user);
         return new AuthResponse(token, userResponse);
@@ -86,8 +91,10 @@ public class AuthService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
 
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user =
+                userRepository
+                        .findByEmail(email)
+                        .orElseThrow(() -> new RuntimeException("User not found"));
 
         return mapToUserResponse(user);
     }
@@ -109,5 +116,4 @@ public class AuthService {
 
         return response;
     }
-
 }

@@ -1,5 +1,12 @@
 package com.expense.segmentation.controller;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
 import com.expense.segmentation.config.JwtAuthenticationFilter;
 import com.expense.segmentation.config.JwtTokenUtil;
 import com.expense.segmentation.dto.AuthResponse;
@@ -11,6 +18,8 @@ import com.expense.segmentation.model.UserStatus;
 import com.expense.segmentation.service.AuthService;
 import com.expense.segmentation.service.CustomUserDetailsService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.LocalDateTime;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,37 +30,21 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
 @WebMvcTest(AuthController.class)
 @AutoConfigureMockMvc(addFilters = false)
 class AuthControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+    @Autowired private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    @Autowired private ObjectMapper objectMapper;
 
-    @MockBean
-    private AuthService authService;
+    @MockBean private AuthService authService;
 
-    @MockBean
-    private JwtTokenUtil jwtTokenUtil;
+    @MockBean private JwtTokenUtil jwtTokenUtil;
 
-    @MockBean
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
+    @MockBean private JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    @MockBean
-    private CustomUserDetailsService customUserDetailsService;
+    @MockBean private CustomUserDetailsService customUserDetailsService;
 
     private RegisterRequest registerRequest;
     private LoginRequest loginRequest;
@@ -79,10 +72,11 @@ class AuthControllerTest {
     void register_WithValidRequest_ShouldReturnCreated() throws Exception {
         when(authService.register(any(RegisterRequest.class))).thenReturn(authResponse);
 
-        mockMvc.perform(post("/auth/register")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(registerRequest)))
+        mockMvc.perform(
+                        post("/auth/register")
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.token").value("test-jwt-token"))
                 .andExpect(jsonPath("$.type").value("Bearer"))
@@ -93,12 +87,14 @@ class AuthControllerTest {
 
     @Test
     void register_WithInvalidEmail_ShouldReturnBadRequest() throws Exception {
-        RegisterRequest invalidRequest = new RegisterRequest("John", "invalid-email", "password123");
+        RegisterRequest invalidRequest =
+                new RegisterRequest("John", "invalid-email", "password123");
 
-        mockMvc.perform(post("/auth/register")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+        mockMvc.perform(
+                        post("/auth/register")
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(invalidRequest)))
                 .andExpect(status().isBadRequest());
     }
 
@@ -106,10 +102,11 @@ class AuthControllerTest {
     void register_WithShortPassword_ShouldReturnBadRequest() throws Exception {
         RegisterRequest invalidRequest = new RegisterRequest("John", "john@example.com", "12345");
 
-        mockMvc.perform(post("/auth/register")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+        mockMvc.perform(
+                        post("/auth/register")
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(invalidRequest)))
                 .andExpect(status().isBadRequest());
     }
 
@@ -117,10 +114,11 @@ class AuthControllerTest {
     void register_WithBlankName_ShouldReturnBadRequest() throws Exception {
         RegisterRequest invalidRequest = new RegisterRequest("", "john@example.com", "password123");
 
-        mockMvc.perform(post("/auth/register")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+        mockMvc.perform(
+                        post("/auth/register")
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(invalidRequest)))
                 .andExpect(status().isBadRequest());
     }
 
@@ -128,10 +126,11 @@ class AuthControllerTest {
     void login_WithValidCredentials_ShouldReturnOk() throws Exception {
         when(authService.login(any(LoginRequest.class))).thenReturn(authResponse);
 
-        mockMvc.perform(post("/auth/login")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginRequest)))
+        mockMvc.perform(
+                        post("/auth/login")
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").value("test-jwt-token"))
                 .andExpect(jsonPath("$.type").value("Bearer"))
@@ -142,10 +141,11 @@ class AuthControllerTest {
     void login_WithInvalidEmail_ShouldReturnBadRequest() throws Exception {
         LoginRequest invalidRequest = new LoginRequest("invalid-email", "password123");
 
-        mockMvc.perform(post("/auth/login")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
+        mockMvc.perform(
+                        post("/auth/login")
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(invalidRequest)))
                 .andExpect(status().isBadRequest());
     }
 
@@ -154,12 +154,10 @@ class AuthControllerTest {
     void getCurrentUser_WithAuthentication_ShouldReturnUser() throws Exception {
         when(authService.getCurrentUser()).thenReturn(userResponse);
 
-        mockMvc.perform(get("/auth/me")
-                        .with(csrf()))
+        mockMvc.perform(get("/auth/me").with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("john@example.com"))
                 .andExpect(jsonPath("$.name").value("John Doe"))
                 .andExpect(jsonPath("$.role").value("EMPLOYEE"));
     }
-
 }

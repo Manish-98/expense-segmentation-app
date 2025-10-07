@@ -3,12 +3,11 @@ package com.expense.segmentation.service;
 import com.expense.segmentation.dto.RoleResponse;
 import com.expense.segmentation.model.Role;
 import com.expense.segmentation.repository.RoleRepository;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor

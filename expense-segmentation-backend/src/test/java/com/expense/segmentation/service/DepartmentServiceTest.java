@@ -1,5 +1,11 @@
 package com.expense.segmentation.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.expense.segmentation.dto.CreateDepartmentRequest;
 import com.expense.segmentation.dto.DepartmentResponse;
 import com.expense.segmentation.dto.UpdateDepartmentRequest;
@@ -10,6 +16,11 @@ import com.expense.segmentation.model.User;
 import com.expense.segmentation.model.UserStatus;
 import com.expense.segmentation.repository.DepartmentRepository;
 import com.expense.segmentation.repository.UserRepository;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,29 +28,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 class DepartmentServiceTest {
 
-    @Mock
-    private DepartmentRepository departmentRepository;
+    @Mock private DepartmentRepository departmentRepository;
 
-    @Mock
-    private UserRepository userRepository;
+    @Mock private UserRepository userRepository;
 
-    @InjectMocks
-    private DepartmentService departmentService;
+    @InjectMocks private DepartmentService departmentService;
 
     private Department department;
     private User manager;
@@ -71,7 +67,8 @@ class DepartmentServiceTest {
     @Test
     void createDepartment_WithValidRequest_ShouldCreateDepartment() {
         // Given
-        CreateDepartmentRequest request = new CreateDepartmentRequest("Engineering", "ENG", manager.getId());
+        CreateDepartmentRequest request =
+                new CreateDepartmentRequest("Engineering", "ENG", manager.getId());
         when(departmentRepository.existsByCode("ENG")).thenReturn(false);
         when(userRepository.findById(manager.getId())).thenReturn(Optional.of(manager));
         when(departmentRepository.save(any(Department.class))).thenReturn(department);
@@ -104,7 +101,8 @@ class DepartmentServiceTest {
     void createDepartment_WithInvalidManagerId_ShouldThrowException() {
         // Given
         UUID invalidManagerId = UUID.randomUUID();
-        CreateDepartmentRequest request = new CreateDepartmentRequest("Engineering", "ENG", invalidManagerId);
+        CreateDepartmentRequest request =
+                new CreateDepartmentRequest("Engineering", "ENG", invalidManagerId);
         when(departmentRepository.existsByCode("ENG")).thenReturn(false);
         when(userRepository.findById(invalidManagerId)).thenReturn(Optional.empty());
 
@@ -169,7 +167,8 @@ class DepartmentServiceTest {
         when(departmentRepository.save(any(Department.class))).thenReturn(department);
 
         // When
-        DepartmentResponse response = departmentService.updateDepartment(department.getId(), request);
+        DepartmentResponse response =
+                departmentService.updateDepartment(department.getId(), request);
 
         // Then
         assertThat(response).isNotNull();
@@ -189,7 +188,8 @@ class DepartmentServiceTest {
         when(departmentRepository.save(any(Department.class))).thenReturn(department);
 
         // When
-        DepartmentResponse response = departmentService.updateDepartment(department.getId(), request);
+        DepartmentResponse response =
+                departmentService.updateDepartment(department.getId(), request);
 
         // Then
         assertThat(response).isNotNull();

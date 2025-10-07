@@ -1,35 +1,30 @@
 package com.expense.segmentation.repository;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.expense.segmentation.model.Department;
 import com.expense.segmentation.model.Role;
 import com.expense.segmentation.model.RoleType;
 import com.expense.segmentation.model.User;
 import com.expense.segmentation.model.UserStatus;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 
-import java.util.List;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 @DataJpaTest
 class UserRepositoryTest {
 
-    @Autowired
-    private TestEntityManager entityManager;
+    @Autowired private TestEntityManager entityManager;
 
-    @Autowired
-    private UserRepository userRepository;
+    @Autowired private UserRepository userRepository;
 
-    @Autowired
-    private RoleRepository roleRepository;
+    @Autowired private RoleRepository roleRepository;
 
-    @Autowired
-    private DepartmentRepository departmentRepository;
+    @Autowired private DepartmentRepository departmentRepository;
 
     private Role employeeRole;
     private Role managerRole;
@@ -137,7 +132,8 @@ class UserRepositoryTest {
 
         // Then
         assertThat(users).hasSize(2);
-        assertThat(users).extracting(User::getEmail)
+        assertThat(users)
+                .extracting(User::getEmail)
                 .containsExactlyInAnyOrder("john@example.com", "jane@example.com");
     }
 
@@ -158,10 +154,11 @@ class UserRepositoryTest {
     @Test
     void findByDepartmentIdAndStatus_ShouldReturnFilteredUsers() {
         // When
-        List<User> activeInIT = userRepository.findByDepartmentIdAndStatus(
-                itDepartment.getId(), UserStatus.ACTIVE);
-        List<User> inactiveInIT = userRepository.findByDepartmentIdAndStatus(
-                itDepartment.getId(), UserStatus.INACTIVE);
+        List<User> activeInIT =
+                userRepository.findByDepartmentIdAndStatus(itDepartment.getId(), UserStatus.ACTIVE);
+        List<User> inactiveInIT =
+                userRepository.findByDepartmentIdAndStatus(
+                        itDepartment.getId(), UserStatus.INACTIVE);
 
         // Then
         assertThat(activeInIT).hasSize(1);

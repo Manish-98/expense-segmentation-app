@@ -1,19 +1,17 @@
 package com.expense.segmentation.config;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
+import java.util.Collections;
+import java.util.Date;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.util.ReflectionTestUtils;
-
-import java.util.Collections;
-import java.util.Date;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class JwtTokenUtilTest {
 
@@ -31,11 +29,13 @@ class JwtTokenUtilTest {
         ReflectionTestUtils.setField(jwtTokenUtil, "secret", testSecret);
         ReflectionTestUtils.setField(jwtTokenUtil, "expiration", testExpiration);
 
-        userDetails = User.builder()
-                .username("test@example.com")
-                .password("password")
-                .authorities(Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")))
-                .build();
+        userDetails =
+                User.builder()
+                        .username("test@example.com")
+                        .password("password")
+                        .authorities(
+                                Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")))
+                        .build();
     }
 
     @Test
@@ -91,11 +91,13 @@ class JwtTokenUtilTest {
         // Given
         String token = jwtTokenUtil.generateToken(userDetails);
 
-        UserDetails differentUser = User.builder()
-                .username("different@example.com")
-                .password("password")
-                .authorities(Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")))
-                .build();
+        UserDetails differentUser =
+                User.builder()
+                        .username("different@example.com")
+                        .password("password")
+                        .authorities(
+                                Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")))
+                        .build();
 
         // When
         Boolean isValid = jwtTokenUtil.validateToken(token, differentUser);
@@ -151,7 +153,8 @@ class JwtTokenUtilTest {
     }
 
     @Test
-    void generateToken_MultipleTokensForSameUser_ShouldHaveDifferentIssuedAt() throws InterruptedException {
+    void generateToken_MultipleTokensForSameUser_ShouldHaveDifferentIssuedAt()
+            throws InterruptedException {
         // Given
         String token1 = jwtTokenUtil.generateToken(userDetails);
         Thread.sleep(1100); // Ensure at least 1 second difference
@@ -201,9 +204,6 @@ class JwtTokenUtilTest {
         long expectedMaxExpiration = afterGeneration + testExpiration + 1000; // 1 second tolerance
         long actualExpiration = expiration.getTime();
 
-        assertThat(actualExpiration).isBetween(
-                expectedMinExpiration,
-                expectedMaxExpiration
-        );
+        assertThat(actualExpiration).isBetween(expectedMinExpiration, expectedMaxExpiration);
     }
 }
