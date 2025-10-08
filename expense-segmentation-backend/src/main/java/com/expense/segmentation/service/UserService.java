@@ -130,11 +130,12 @@ public class UserService {
     }
 
     /**
-     * Updates a user entity. Used internally by other services for manager assignment.
+     * Updates a user entity. Used internally by other services for manager assignment. Uses
+     * MANDATORY propagation to ensure it runs within the caller's transaction.
      *
      * @param user the user to update
      */
-    @Transactional
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
     public void updateUserEntity(User user) {
         log.debug("Updating user entity: {}", user.getId());
         userRepository.save(user);

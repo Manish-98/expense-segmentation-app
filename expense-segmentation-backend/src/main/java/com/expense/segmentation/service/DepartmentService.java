@@ -99,11 +99,12 @@ public class DepartmentService {
     }
 
     /**
-     * Updates a department entity. Used internally by other services.
+     * Updates a department entity. Used internally by other services. Uses MANDATORY propagation to
+     * ensure it runs within the caller's transaction.
      *
      * @param department the department to update
      */
-    @Transactional
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
     public void updateDepartmentEntity(Department department) {
         log.debug("Updating department entity: {}", department.getId());
         departmentRepository.save(department);
