@@ -236,7 +236,6 @@ class ExpenseControllerTest {
                                 "You are not authorized to view expenses for this user"));
 
         // When & Then
-        mockMvc.perform(get("/expenses/user/{userId}", userId))
-                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/expenses/user/{userId}", userId)).andExpect(status().isForbidden());
     }
 }

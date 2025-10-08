@@ -97,7 +97,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(SecurityException.class)
     public ResponseEntity<ErrorResponse> handleSecurityException(
             SecurityException ex, HttpServletRequest request) {
-        log.warn("Security exception for request: {} {}", request.getMethod(), request.getRequestURI());
+        log.warn(
+                "Security exception for request: {} {}",
+                request.getMethod(),
+                request.getRequestURI());
 
         ErrorResponse response =
                 ErrorResponse.builder()
