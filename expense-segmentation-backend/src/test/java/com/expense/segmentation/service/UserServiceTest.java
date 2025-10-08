@@ -15,8 +15,6 @@ import com.expense.segmentation.model.Role;
 import com.expense.segmentation.model.RoleType;
 import com.expense.segmentation.model.User;
 import com.expense.segmentation.model.UserStatus;
-import com.expense.segmentation.repository.DepartmentRepository;
-import com.expense.segmentation.repository.RoleRepository;
 import com.expense.segmentation.repository.UserRepository;
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -26,7 +24,6 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -35,11 +32,11 @@ class UserServiceTest {
 
     @Mock private UserRepository userRepository;
 
-    @Mock private RoleRepository roleRepository;
+    @Mock private RoleService roleService;
 
-    @Mock private DepartmentRepository departmentRepository;
+    @Mock private DepartmentService departmentService;
 
-    @InjectMocks private UserService userService;
+    private UserService userService;
 
     private UserMapper userMapper;
 
@@ -54,8 +51,7 @@ class UserServiceTest {
     void setUp() {
         // Initialize real mapper
         userMapper = new UserMapper();
-        userService =
-                new UserService(userRepository, roleRepository, departmentRepository, userMapper);
+        userService = new UserService(userRepository, roleService, departmentService, userMapper);
 
         employeeRole = new Role();
         employeeRole.setId(UUID.randomUUID());
@@ -109,7 +105,8 @@ class UserServiceTest {
     @Test
     void getAllUsers_ShouldReturnAllUsers() {
         // Given
-        when(userRepository.findAll()).thenReturn(Arrays.asList(user1, user2, manager));
+        when(userRepository.findAllWithDepartmentAndRole())
+                .thenReturn(Arrays.asList(user1, user2, manager));
 
         // When
         List<UserResponse> users = userService.getAllUsers();
@@ -119,14 +116,14 @@ class UserServiceTest {
         assertThat(users.get(0).getName()).isEqualTo("User One");
         assertThat(users.get(1).getName()).isEqualTo("User Two");
         assertThat(users.get(2).getName()).isEqualTo("Manager");
-        verify(userRepository).findAll();
+        verify(userRepository).findAllWithDepartmentAndRole();
     }
 
     @Test
     void getUsersByDepartment_WithValidManager_ShouldReturnUsersInDepartment() {
         // Given
         when(userRepository.findById(manager.getId())).thenReturn(Optional.of(manager));
-        when(userRepository.findByDepartmentId(department.getId()))
+        when(userRepository.findByDepartmentIdWithRole(department.getId()))
                 .thenReturn(Arrays.asList(user1, user2, manager));
 
         // When
@@ -138,7 +135,7 @@ class UserServiceTest {
                 .extracting(UserResponse::getDepartmentId)
                 .containsOnly(department.getId());
         verify(userRepository).findById(manager.getId());
-        verify(userRepository).findByDepartmentId(department.getId());
+        verify(userRepository).findByDepartmentIdWithRole(department.getId());
     }
 
     @Test
@@ -178,8 +175,7 @@ class UserServiceTest {
         request.setRole(RoleType.MANAGER);
 
         when(userRepository.findById(user1.getId())).thenReturn(Optional.of(user1));
-        when(roleRepository.findByName(RoleType.MANAGER)).thenReturn(Optional.of(managerRole));
-        when(departmentRepository.save(any(Department.class))).thenReturn(department);
+        when(roleService.getRoleByName(RoleType.MANAGER)).thenReturn(managerRole);
         when(userRepository.save(any(User.class))).thenReturn(user1);
 
         // When
@@ -189,8 +185,9 @@ class UserServiceTest {
         assertThat(response).isNotNull();
         assertThat(response.getRole()).isEqualTo(RoleType.MANAGER);
         verify(userRepository).findById(user1.getId());
-        verify(roleRepository).findByName(RoleType.MANAGER);
-        verify(departmentRepository).save(department); // Should update department manager
+        verify(roleService).getRoleByName(RoleType.MANAGER);
+        verify(departmentService)
+                .updateDepartmentEntity(department); // Should update department manager
         verify(userRepository).save(user1);
     }
 
@@ -206,8 +203,8 @@ class UserServiceTest {
         request.setDepartmentId(newDepartment.getId());
 
         when(userRepository.findById(user1.getId())).thenReturn(Optional.of(user1));
-        when(departmentRepository.findById(newDepartment.getId()))
-                .thenReturn(Optional.of(newDepartment));
+        when(departmentService.getDepartmentEntityById(newDepartment.getId()))
+                .thenReturn(newDepartment);
         when(userRepository.save(any(User.class))).thenReturn(user1);
 
         // When
@@ -216,7 +213,7 @@ class UserServiceTest {
         // Then
         assertThat(response).isNotNull();
         verify(userRepository).findById(user1.getId());
-        verify(departmentRepository).findById(newDepartment.getId());
+        verify(departmentService).getDepartmentEntityById(newDepartment.getId());
         verify(userRepository).save(user1);
     }
 
@@ -232,10 +229,9 @@ class UserServiceTest {
         request.setDepartmentId(newDepartment.getId());
 
         when(userRepository.findById(user1.getId())).thenReturn(Optional.of(user1));
-        when(roleRepository.findByName(RoleType.MANAGER)).thenReturn(Optional.of(managerRole));
-        when(departmentRepository.findById(newDepartment.getId()))
-                .thenReturn(Optional.of(newDepartment));
-        when(departmentRepository.save(any(Department.class))).thenReturn(newDepartment);
+        when(roleService.getRoleByName(RoleType.MANAGER)).thenReturn(managerRole);
+        when(departmentService.getDepartmentEntityById(newDepartment.getId()))
+                .thenReturn(newDepartment);
         when(userRepository.save(any(User.class))).thenReturn(user1);
 
         // When
@@ -244,9 +240,10 @@ class UserServiceTest {
         // Then
         assertThat(response).isNotNull();
         verify(userRepository).findById(user1.getId());
-        verify(roleRepository).findByName(RoleType.MANAGER);
-        verify(departmentRepository).findById(newDepartment.getId());
-        verify(departmentRepository).save(newDepartment); // Should update department manager
+        verify(roleService).getRoleByName(RoleType.MANAGER);
+        verify(departmentService).getDepartmentEntityById(newDepartment.getId());
+        verify(departmentService)
+                .updateDepartmentEntity(newDepartment); // Should update department manager
         verify(userRepository).save(user1);
     }
 
@@ -265,7 +262,7 @@ class UserServiceTest {
                 .hasMessageContaining("User not found");
 
         verify(userRepository).findById(nonExistentId);
-        verify(roleRepository, never()).findByName(any());
+        verify(roleService, never()).getRoleByName(any());
         verify(userRepository, never()).save(any());
     }
 
@@ -276,7 +273,8 @@ class UserServiceTest {
         request.setRole(RoleType.OWNER);
 
         when(userRepository.findById(user1.getId())).thenReturn(Optional.of(user1));
-        when(roleRepository.findByName(RoleType.OWNER)).thenReturn(Optional.empty());
+        when(roleService.getRoleByName(RoleType.OWNER))
+                .thenThrow(new ResourceNotFoundException("Role", "name", RoleType.OWNER.toString()));
 
         // When & Then
         assertThatThrownBy(() -> userService.updateUser(user1.getId(), request))
@@ -284,7 +282,7 @@ class UserServiceTest {
                 .hasMessageContaining("Role not found");
 
         verify(userRepository).findById(user1.getId());
-        verify(roleRepository).findByName(RoleType.OWNER);
+        verify(roleService).getRoleByName(RoleType.OWNER);
         verify(userRepository, never()).save(any());
     }
 
@@ -296,7 +294,9 @@ class UserServiceTest {
         request.setDepartmentId(nonExistentDeptId);
 
         when(userRepository.findById(user1.getId())).thenReturn(Optional.of(user1));
-        when(departmentRepository.findById(nonExistentDeptId)).thenReturn(Optional.empty());
+        when(departmentService.getDepartmentEntityById(nonExistentDeptId))
+                .thenThrow(
+                        new ResourceNotFoundException("Department", nonExistentDeptId.toString()));
 
         // When & Then
         assertThatThrownBy(() -> userService.updateUser(user1.getId(), request))
@@ -304,7 +304,7 @@ class UserServiceTest {
                 .hasMessageContaining("Department not found");
 
         verify(userRepository).findById(user1.getId());
-        verify(departmentRepository).findById(nonExistentDeptId);
+        verify(departmentService).getDepartmentEntityById(nonExistentDeptId);
         verify(userRepository, never()).save(any());
     }
 
@@ -352,8 +352,8 @@ class UserServiceTest {
         // Then
         assertThat(response).isNotNull();
         verify(userRepository).findById(user1.getId());
-        verify(roleRepository, never()).findByName(any());
-        verify(departmentRepository, never()).findById(any());
+        verify(roleService, never()).getRoleByName(any());
+        verify(departmentService, never()).getDepartmentEntityById(any());
         verify(userRepository).save(user1);
     }
 
@@ -364,8 +364,7 @@ class UserServiceTest {
         request.setRole(RoleType.MANAGER);
 
         when(userRepository.findById(user1.getId())).thenReturn(Optional.of(user1));
-        when(roleRepository.findByName(RoleType.MANAGER)).thenReturn(Optional.of(managerRole));
-        when(departmentRepository.save(any(Department.class))).thenReturn(department);
+        when(roleService.getRoleByName(RoleType.MANAGER)).thenReturn(managerRole);
         when(userRepository.save(any(User.class))).thenReturn(user1);
 
         // When
@@ -376,11 +375,11 @@ class UserServiceTest {
         assertThat(response.getRole()).isEqualTo(RoleType.MANAGER);
 
         // Verify that department's manager field is updated
-        verify(departmentRepository).save(department);
+        verify(departmentService).updateDepartmentEntity(department);
         assertThat(department.getManager()).isEqualTo(user1);
 
         verify(userRepository).findById(user1.getId());
-        verify(roleRepository).findByName(RoleType.MANAGER);
+        verify(roleService).getRoleByName(RoleType.MANAGER);
         verify(userRepository).save(user1);
     }
 
@@ -397,10 +396,9 @@ class UserServiceTest {
         request.setDepartmentId(newDepartment.getId());
 
         when(userRepository.findById(user1.getId())).thenReturn(Optional.of(user1));
-        when(roleRepository.findByName(RoleType.MANAGER)).thenReturn(Optional.of(managerRole));
-        when(departmentRepository.findById(newDepartment.getId()))
-                .thenReturn(Optional.of(newDepartment));
-        when(departmentRepository.save(any(Department.class))).thenReturn(newDepartment);
+        when(roleService.getRoleByName(RoleType.MANAGER)).thenReturn(managerRole);
+        when(departmentService.getDepartmentEntityById(newDepartment.getId()))
+                .thenReturn(newDepartment);
         when(userRepository.save(any(User.class))).thenReturn(user1);
 
         // When
@@ -411,12 +409,12 @@ class UserServiceTest {
         assertThat(response.getRole()).isEqualTo(RoleType.MANAGER);
 
         // Verify that the new department's manager field is updated
-        verify(departmentRepository).save(newDepartment);
+        verify(departmentService).updateDepartmentEntity(newDepartment);
         assertThat(newDepartment.getManager()).isEqualTo(user1);
 
         verify(userRepository).findById(user1.getId());
-        verify(roleRepository).findByName(RoleType.MANAGER);
-        verify(departmentRepository).findById(newDepartment.getId());
+        verify(roleService).getRoleByName(RoleType.MANAGER);
+        verify(departmentService).getDepartmentEntityById(newDepartment.getId());
         verify(userRepository).save(user1);
     }
 
@@ -435,7 +433,7 @@ class UserServiceTest {
 
         when(userRepository.findById(userWithoutDept.getId()))
                 .thenReturn(Optional.of(userWithoutDept));
-        when(roleRepository.findByName(RoleType.MANAGER)).thenReturn(Optional.of(managerRole));
+        when(roleService.getRoleByName(RoleType.MANAGER)).thenReturn(managerRole);
 
         // When & Then
         assertThatThrownBy(() -> userService.updateUser(userWithoutDept.getId(), request))
@@ -445,8 +443,8 @@ class UserServiceTest {
                                 + " role");
 
         verify(userRepository).findById(userWithoutDept.getId());
-        verify(roleRepository).findByName(RoleType.MANAGER);
-        verify(departmentRepository, never()).save(any());
+        verify(roleService).getRoleByName(RoleType.MANAGER);
+        verify(departmentService, never()).updateDepartmentEntity(any());
         verify(userRepository, never()).save(any());
     }
 
@@ -465,7 +463,7 @@ class UserServiceTest {
         request.setRole(RoleType.MANAGER);
 
         when(userRepository.findById(user1.getId())).thenReturn(Optional.of(user1));
-        when(roleRepository.findByName(RoleType.MANAGER)).thenReturn(Optional.of(managerRole));
+        when(roleService.getRoleByName(RoleType.MANAGER)).thenReturn(managerRole);
 
         // When & Then
         assertThatThrownBy(() -> userService.updateUser(user1.getId(), request))
@@ -474,8 +472,8 @@ class UserServiceTest {
                 .hasMessageContaining("Existing Manager");
 
         verify(userRepository).findById(user1.getId());
-        verify(roleRepository).findByName(RoleType.MANAGER);
-        verify(departmentRepository, never()).save(any());
+        verify(roleService).getRoleByName(RoleType.MANAGER);
+        verify(departmentService, never()).updateDepartmentEntity(any());
         verify(userRepository, never()).save(any());
     }
 
@@ -488,8 +486,7 @@ class UserServiceTest {
         request.setRole(RoleType.EMPLOYEE);
 
         when(userRepository.findById(manager.getId())).thenReturn(Optional.of(manager));
-        when(roleRepository.findByName(RoleType.EMPLOYEE)).thenReturn(Optional.of(employeeRole));
-        when(departmentRepository.save(any(Department.class))).thenReturn(department);
+        when(roleService.getRoleByName(RoleType.EMPLOYEE)).thenReturn(employeeRole);
         when(userRepository.save(any(User.class))).thenReturn(manager);
 
         // When
@@ -500,11 +497,11 @@ class UserServiceTest {
         assertThat(response.getRole()).isEqualTo(RoleType.EMPLOYEE);
 
         // Verify department's manager field is cleared
-        verify(departmentRepository).save(department);
+        verify(departmentService).updateDepartmentEntity(department);
         assertThat(department.getManager()).isNull();
 
         verify(userRepository).findById(manager.getId());
-        verify(roleRepository).findByName(RoleType.EMPLOYEE);
+        verify(roleService).getRoleByName(RoleType.EMPLOYEE);
         verify(userRepository).save(manager);
     }
 
@@ -522,10 +519,8 @@ class UserServiceTest {
         request.setDepartmentId(newDepartment.getId());
 
         when(userRepository.findById(manager.getId())).thenReturn(Optional.of(manager));
-        when(departmentRepository.findById(newDepartment.getId()))
-                .thenReturn(Optional.of(newDepartment));
-        when(departmentRepository.save(any(Department.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(departmentService.getDepartmentEntityById(newDepartment.getId()))
+                .thenReturn(newDepartment);
         when(userRepository.save(any(User.class))).thenReturn(manager);
 
         // When
@@ -535,12 +530,12 @@ class UserServiceTest {
         assertThat(response).isNotNull();
 
         // Verify old department's manager field is cleared
-        verify(departmentRepository, times(2)).save(any(Department.class));
+        verify(departmentService, times(2)).updateDepartmentEntity(any(Department.class));
         assertThat(department.getManager()).isNull();
         assertThat(newDepartment.getManager()).isEqualTo(manager);
 
         verify(userRepository).findById(manager.getId());
-        verify(departmentRepository).findById(newDepartment.getId());
+        verify(departmentService).getDepartmentEntityById(newDepartment.getId());
         verify(userRepository).save(manager);
     }
 
@@ -565,10 +560,8 @@ class UserServiceTest {
         request.setDepartmentId(newDepartment.getId());
 
         when(userRepository.findById(manager.getId())).thenReturn(Optional.of(manager));
-        when(departmentRepository.findById(newDepartment.getId()))
-                .thenReturn(Optional.of(newDepartment));
-        when(departmentRepository.save(any(Department.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(departmentService.getDepartmentEntityById(newDepartment.getId()))
+                .thenReturn(newDepartment);
 
         // When & Then
         assertThatThrownBy(() -> userService.updateUser(manager.getId(), request))
@@ -576,7 +569,7 @@ class UserServiceTest {
                 .hasMessageContaining("already has a manager");
 
         // Verify old department's manager is cleared but user is not saved
-        verify(departmentRepository).save(department);
+        verify(departmentService).updateDepartmentEntity(department);
         assertThat(department.getManager()).isNull();
         verify(userRepository, never()).save(any());
     }
@@ -596,7 +589,7 @@ class UserServiceTest {
 
         when(userRepository.findById(managerWithoutDept.getId()))
                 .thenReturn(Optional.of(managerWithoutDept));
-        when(roleRepository.findByName(RoleType.EMPLOYEE)).thenReturn(Optional.of(employeeRole));
+        when(roleService.getRoleByName(RoleType.EMPLOYEE)).thenReturn(employeeRole);
         when(userRepository.save(any(User.class))).thenReturn(managerWithoutDept);
 
         // When
@@ -607,8 +600,8 @@ class UserServiceTest {
         assertThat(response.getRole()).isEqualTo(RoleType.EMPLOYEE);
 
         verify(userRepository).findById(managerWithoutDept.getId());
-        verify(roleRepository).findByName(RoleType.EMPLOYEE);
-        verify(departmentRepository, never()).save(any());
+        verify(roleService).getRoleByName(RoleType.EMPLOYEE);
+        verify(departmentService, never()).updateDepartmentEntity(any());
         verify(userRepository).save(managerWithoutDept);
     }
 
@@ -622,7 +615,7 @@ class UserServiceTest {
         // user1 is already in the same department
 
         when(userRepository.findById(user1.getId())).thenReturn(Optional.of(user1));
-        when(roleRepository.findByName(RoleType.MANAGER)).thenReturn(Optional.of(managerRole));
+        when(roleService.getRoleByName(RoleType.MANAGER)).thenReturn(managerRole);
 
         // When & Then
         assertThatThrownBy(() -> userService.updateUser(user1.getId(), request))
@@ -630,8 +623,8 @@ class UserServiceTest {
                 .hasMessageContaining("already has a manager");
 
         verify(userRepository).findById(user1.getId());
-        verify(roleRepository).findByName(RoleType.MANAGER);
-        verify(departmentRepository, never()).save(any());
+        verify(roleService).getRoleByName(RoleType.MANAGER);
+        verify(departmentService, never()).updateDepartmentEntity(any());
         verify(userRepository, never()).save(any());
     }
 
@@ -641,7 +634,6 @@ class UserServiceTest {
         department.setManager(manager);
 
         when(userRepository.findById(manager.getId())).thenReturn(Optional.of(manager));
-        when(departmentRepository.save(any(Department.class))).thenReturn(department);
         when(userRepository.save(any(User.class))).thenReturn(manager);
 
         // When
@@ -652,7 +644,7 @@ class UserServiceTest {
         assertThat(department.getManager()).isNull();
 
         verify(userRepository).findById(manager.getId());
-        verify(departmentRepository).save(department);
+        verify(departmentService).updateDepartmentEntity(department);
         verify(userRepository).save(manager);
     }
 
@@ -669,7 +661,7 @@ class UserServiceTest {
         assertThat(user1.getStatus()).isEqualTo(UserStatus.INACTIVE);
 
         verify(userRepository).findById(user1.getId());
-        verify(departmentRepository, never()).save(any());
+        verify(departmentService, never()).updateDepartmentEntity(any());
         verify(userRepository).save(user1);
     }
 }
