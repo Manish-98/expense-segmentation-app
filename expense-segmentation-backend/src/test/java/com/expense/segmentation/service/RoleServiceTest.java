@@ -1,14 +1,17 @@
 package com.expense.segmentation.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 import com.expense.segmentation.dto.RoleResponse;
+import com.expense.segmentation.exception.ResourceNotFoundException;
 import com.expense.segmentation.model.Role;
 import com.expense.segmentation.model.RoleType;
 import com.expense.segmentation.repository.RoleRepository;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,5 +69,31 @@ class RoleServiceTest {
 
         // Then
         assertThat(roles).isEmpty();
+    }
+
+    @Test
+    void getRoleByName_WithValidRoleType_ShouldReturnRole() {
+        // Given
+        when(roleRepository.findByName(RoleType.EMPLOYEE)).thenReturn(Optional.of(employeeRole));
+
+        // When
+        Role role = roleService.getRoleByName(RoleType.EMPLOYEE);
+
+        // Then
+        assertThat(role).isNotNull();
+        assertThat(role.getName()).isEqualTo(RoleType.EMPLOYEE);
+        assertThat(role.getDescription()).isEqualTo("Employee role");
+    }
+
+    @Test
+    void getRoleByName_WithInvalidRoleType_ShouldThrowException() {
+        // Given
+        when(roleRepository.findByName(RoleType.MANAGER)).thenReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> roleService.getRoleByName(RoleType.MANAGER))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Role")
+                .hasMessageContaining("MANAGER");
     }
 }

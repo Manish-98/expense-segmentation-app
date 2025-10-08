@@ -1,7 +1,6 @@
 package com.expense.segmentation.controller;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -232,10 +231,11 @@ class ExpenseControllerTest {
             throws Exception {
         // Given
         when(expenseService.getExpensesByUser(userId))
-                .thenThrow(new SecurityException("You are not authorized to view expenses for this user"));
+                .thenThrow(
+                        new SecurityException(
+                                "You are not authorized to view expenses for this user"));
 
         // When & Then
-        mockMvc.perform(get("/expenses/user/{userId}", userId))
-                .andExpect(status().isInternalServerError());
+        mockMvc.perform(get("/expenses/user/{userId}", userId)).andExpect(status().isForbidden());
     }
 }

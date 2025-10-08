@@ -3,6 +3,7 @@ package com.expense.segmentation.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -61,11 +62,18 @@ class ExpenseServiceTest {
         expenseMapper = new ExpenseMapper();
         expenseService = new ExpenseService(expenseRepository, userRepository, expenseMapper);
 
+        // Set up test role (FINANCE role has permission to view all expenses)
+        Role financeRole = new Role();
+        financeRole.setId(UUID.randomUUID());
+        financeRole.setName(RoleType.FINANCE);
+        financeRole.setDescription("Finance role");
+
         // Set up test user
         testUser = new User();
         testUser.setId(UUID.randomUUID());
         testUser.setEmail("test@example.com");
         testUser.setName("Test User");
+        testUser.setRole(financeRole);
 
         // Set up test expense
         testExpense = new Expense();
@@ -78,10 +86,10 @@ class ExpenseServiceTest {
         testExpense.setCreatedBy(testUser);
         testExpense.setStatus(ExpenseStatus.SUBMITTED);
 
-        // Mock security context
+        // Mock security context (lenient since not all tests use authentication)
         SecurityContextHolder.setContext(securityContext);
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        when(authentication.getName()).thenReturn(testUser.getEmail());
+        lenient().when(securityContext.getAuthentication()).thenReturn(authentication);
+        lenient().when(authentication.getName()).thenReturn(testUser.getEmail());
     }
 
     @Test
@@ -209,8 +217,8 @@ class ExpenseServiceTest {
         // Arrange
         UUID userId = testUser.getId();
         when(userRepository.existsById(userId)).thenReturn(true);
-        when(expenseRepository.findByCreatedById(userId))
-                .thenReturn(Arrays.asList(testExpense));
+        when(userRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
+        when(expenseRepository.findByCreatedById(userId)).thenReturn(Arrays.asList(testExpense));
 
         // Act
         List<ExpenseResponse> responses = expenseService.getExpensesByUser(userId);

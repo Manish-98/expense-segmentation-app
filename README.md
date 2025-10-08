@@ -1,5 +1,7 @@
 # Expense Segmentation Application
 
+[![CI - Build and Test](https://github.com/Manish-98/expense-segmentation-app/actions/workflows/ci.yml/badge.svg)](https://github.com/Manish-98/expense-segmentation-app/actions/workflows/ci.yml)
+
 A full-stack expense segmentation application with React frontend, Spring Boot backend, and PostgreSQL database.
 
 ## Architecture
@@ -199,6 +201,44 @@ make shell-frontend
 
 # Database shell (PostgreSQL CLI)
 make shell-db
+```
+
+## CI/CD Pipeline
+
+The project uses GitHub Actions for continuous integration and deployment.
+
+### Automated Checks
+
+Every push or pull request to the `main` branch triggers the CI pipeline:
+
+**Backend Checks:**
+- ✅ Code formatting verification (Spotless)
+- ✅ Compilation
+- ✅ All unit tests
+- ✅ Code coverage verification (minimum 95% for business logic)
+
+**Frontend Checks:**
+- ✅ Dependency installation
+- ✅ Production build
+
+**Workflow File:** `.github/workflows/ci.yml`
+
+### Viewing CI Results
+
+- Check the **Actions** tab in the GitHub repository
+- Build status badge at the top of this README
+- Test reports and coverage reports are uploaded as artifacts
+
+### Local Pre-Push Validation
+
+Before pushing, run the same checks locally:
+
+```bash
+# Backend - Full check
+cd expense-segmentation-backend
+./gradlew clean build
+
+# Or use the pre-push hook (see Git Hooks section)
 ```
 
 ## Health Checks

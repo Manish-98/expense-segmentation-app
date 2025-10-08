@@ -8,6 +8,7 @@ import com.expense.segmentation.mapper.ExpenseMapper;
 import com.expense.segmentation.model.Expense;
 import com.expense.segmentation.model.ExpenseStatus;
 import com.expense.segmentation.model.ExpenseType;
+import com.expense.segmentation.model.RoleType;
 import com.expense.segmentation.model.User;
 import com.expense.segmentation.repository.ExpenseRepository;
 import com.expense.segmentation.repository.UserRepository;
@@ -104,17 +105,16 @@ public class ExpenseService {
 
         // Authorization check: Users can only view their own expenses
         // unless they have FINANCE or ADMIN roles
-        String currentUserRole = currentUser.getRole().getName();
+        RoleType currentUserRole = currentUser.getRole().getName();
         boolean isFinanceOrAdmin =
-                "FINANCE".equals(currentUserRole) || "ADMIN".equals(currentUserRole);
+                RoleType.FINANCE.equals(currentUserRole) || RoleType.ADMIN.equals(currentUserRole);
 
         if (!isFinanceOrAdmin && !currentUser.getId().equals(userId)) {
             log.warn(
                     "User {} attempted to access expenses of user {} without permission",
                     currentUser.getId(),
                     userId);
-            throw new SecurityException(
-                    "You are not authorized to view expenses for this user");
+            throw new SecurityException("You are not authorized to view expenses for this user");
         }
 
         List<ExpenseResponse> expenses =

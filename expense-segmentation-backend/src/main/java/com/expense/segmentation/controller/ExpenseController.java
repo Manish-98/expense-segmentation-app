@@ -114,7 +114,8 @@ public class ExpenseController {
     @Operation(
             summary = "Get expenses by user",
             description =
-                    "Retrieves expenses for a specific user. Users can only view their own expenses unless they have FINANCE or ADMIN role")
+                    "Retrieves expenses for a specific user. Users can only view their own expenses"
+                            + " unless they have FINANCE or ADMIN role")
     public ResponseEntity<List<ExpenseResponse>> getExpensesByUser(@PathVariable UUID userId) {
         log.info("GET /expenses/user/{} - Retrieving expenses for user", userId);
         return ResponseEntity.ok(expenseService.getExpensesByUser(userId));
