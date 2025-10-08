@@ -11,6 +11,9 @@ import com.expense.segmentation.dto.AuthResponse;
 import com.expense.segmentation.dto.LoginRequest;
 import com.expense.segmentation.dto.RegisterRequest;
 import com.expense.segmentation.dto.UserResponse;
+import com.expense.segmentation.exception.DuplicateResourceException;
+import com.expense.segmentation.exception.ResourceNotFoundException;
+import com.expense.segmentation.mapper.UserMapper;
 import com.expense.segmentation.model.Department;
 import com.expense.segmentation.model.Role;
 import com.expense.segmentation.model.RoleType;
@@ -55,6 +58,8 @@ class AuthServiceTest {
 
     @InjectMocks private AuthService authService;
 
+    private UserMapper userMapper;
+
     private RegisterRequest registerRequest;
     private LoginRequest loginRequest;
     private User user;
@@ -63,6 +68,11 @@ class AuthServiceTest {
 
     @BeforeEach
     void setUp() {
+        // Initialize real mapper
+        userMapper = new UserMapper();
+        authService = new AuthService(userRepository, roleRepository, passwordEncoder,
+                jwtTokenUtil, authenticationManager, userDetailsService, userMapper);
+
         registerRequest = new RegisterRequest("John Doe", "john@example.com", "password123");
         loginRequest = new LoginRequest("john@example.com", "password123");
 
@@ -128,8 +138,8 @@ class AuthServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> authService.register(registerRequest))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessage("Email already exists");
+                .isInstanceOf(DuplicateResourceException.class)
+                .hasMessageContaining("already exists");
 
         verify(userRepository).existsByEmail(registerRequest.getEmail());
         verify(roleRepository, never()).findByName(any());
@@ -144,8 +154,8 @@ class AuthServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> authService.register(registerRequest))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessage("Default EMPLOYEE role not found");
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Role not found");
 
         verify(userRepository).existsByEmail(registerRequest.getEmail());
         verify(roleRepository).findByName(RoleType.EMPLOYEE);
@@ -206,8 +216,8 @@ class AuthServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> authService.login(loginRequest))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessage("User not found");
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("User not found");
 
         verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
         verify(userRepository).findByEmail(loginRequest.getEmail());
@@ -255,8 +265,8 @@ class AuthServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> authService.getCurrentUser())
-                .isInstanceOf(RuntimeException.class)
-                .hasMessage("User not found");
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("User not found");
 
         verify(userRepository).findByEmail("john@example.com");
 

@@ -247,7 +247,7 @@ class RoleDepartmentIntegrationTest {
     }
 
     @Test
-    void createDepartment_WithDuplicateCode_ShouldReturnBadRequest() throws Exception {
+    void createDepartment_WithDuplicateCode_ShouldReturnConflict() throws Exception {
         // Create first department
         CreateDepartmentRequest request = new CreateDepartmentRequest("Engineering", "ENG", null);
         mockMvc.perform(
@@ -257,13 +257,12 @@ class RoleDepartmentIntegrationTest {
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated());
 
-        // Try to create another with same code - should return 400 since RuntimeException is
-        // handled by GlobalExceptionHandler
+        // Try to create another with same code - should return 409 Conflict
         mockMvc.perform(
                         post("/departments")
                                 .header("Authorization", "Bearer " + adminToken)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isConflict());
     }
 }

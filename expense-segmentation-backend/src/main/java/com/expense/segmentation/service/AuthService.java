@@ -5,6 +5,9 @@ import com.expense.segmentation.dto.AuthResponse;
 import com.expense.segmentation.dto.LoginRequest;
 import com.expense.segmentation.dto.RegisterRequest;
 import com.expense.segmentation.dto.UserResponse;
+import com.expense.segmentation.exception.DuplicateResourceException;
+import com.expense.segmentation.exception.ResourceNotFoundException;
+import com.expense.segmentation.mapper.UserMapper;
 import com.expense.segmentation.model.Role;
 import com.expense.segmentation.model.RoleType;
 import com.expense.segmentation.model.User;
@@ -12,6 +15,7 @@ import com.expense.segmentation.model.UserStatus;
 import com.expense.segmentation.repository.RoleRepository;
 import com.expense.segmentation.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -21,6 +25,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -31,19 +36,28 @@ public class AuthService {
     private final JwtTokenUtil jwtTokenUtil;
     private final AuthenticationManager authenticationManager;
     private final CustomUserDetailsService userDetailsService;
+    private final UserMapper userMapper;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
+        log.info("Attempting to register new user with email: {}", request.getEmail());
+
         // Check if email already exists
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already exists");
+            log.error("Registration failed: email {} already exists", request.getEmail());
+            throw new DuplicateResourceException("User", "email", request.getEmail());
         }
 
         // Get default EMPLOYEE role
         Role employeeRole =
                 roleRepository
                         .findByName(RoleType.EMPLOYEE)
-                        .orElseThrow(() -> new RuntimeException("Default EMPLOYEE role not found"));
+                        .orElseThrow(
+                                () -> {
+                                    log.error("EMPLOYEE role not found in database");
+                                    return new ResourceNotFoundException(
+                                            "Role", "name", RoleType.EMPLOYEE.toString());
+                                });
 
         // Create new user
         User user = new User();
@@ -54,17 +68,20 @@ public class AuthService {
         user.setStatus(UserStatus.ACTIVE);
 
         user = userRepository.save(user);
+        log.info("Successfully registered new user: {} with id: {}", user.getEmail(), user.getId());
 
         // Generate JWT token
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
         String token = jwtTokenUtil.generateToken(userDetails);
 
         // Create response
-        UserResponse userResponse = mapToUserResponse(user);
+        UserResponse userResponse = userMapper.toResponse(user);
         return new AuthResponse(token, userResponse);
     }
 
     public AuthResponse login(LoginRequest request) {
+        log.info("Login attempt for user: {}", request.getEmail());
+
         // Authenticate user
         Authentication authentication =
                 authenticationManager.authenticate(
@@ -81,39 +98,32 @@ public class AuthService {
         User user =
                 userRepository
                         .findByEmail(request.getEmail())
-                        .orElseThrow(() -> new RuntimeException("User not found"));
+                        .orElseThrow(
+                                () -> {
+                                    log.error("User not found after successful authentication: {}", request.getEmail());
+                                    return new ResourceNotFoundException(
+                                            "User", "email", request.getEmail());
+                                });
 
-        UserResponse userResponse = mapToUserResponse(user);
+        log.info("User {} logged in successfully", request.getEmail());
+        UserResponse userResponse = userMapper.toResponse(user);
         return new AuthResponse(token, userResponse);
     }
 
     public UserResponse getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
+        log.debug("Fetching current user details for: {}", email);
 
         User user =
                 userRepository
                         .findByEmail(email)
-                        .orElseThrow(() -> new RuntimeException("User not found"));
+                        .orElseThrow(
+                                () -> {
+                                    log.error("Authenticated user not found in database: {}", email);
+                                    return new ResourceNotFoundException("User", "email", email);
+                                });
 
-        return mapToUserResponse(user);
-    }
-
-    private UserResponse mapToUserResponse(User user) {
-        UserResponse response = new UserResponse();
-        response.setId(user.getId());
-        response.setName(user.getName());
-        response.setEmail(user.getEmail());
-        response.setRole(user.getRole().getName());
-        response.setStatus(user.getStatus());
-        response.setCreatedAt(user.getCreatedAt());
-        response.setUpdatedAt(user.getUpdatedAt());
-
-        if (user.getDepartment() != null) {
-            response.setDepartmentId(user.getDepartment().getId());
-            response.setDepartmentName(user.getDepartment().getName());
-        }
-
-        return response;
+        return userMapper.toResponse(user);
     }
 }

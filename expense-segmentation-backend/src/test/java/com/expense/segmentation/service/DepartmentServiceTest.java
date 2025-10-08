@@ -9,6 +9,9 @@ import static org.mockito.Mockito.when;
 import com.expense.segmentation.dto.CreateDepartmentRequest;
 import com.expense.segmentation.dto.DepartmentResponse;
 import com.expense.segmentation.dto.UpdateDepartmentRequest;
+import com.expense.segmentation.exception.DuplicateResourceException;
+import com.expense.segmentation.exception.ResourceNotFoundException;
+import com.expense.segmentation.mapper.DepartmentMapper;
 import com.expense.segmentation.model.Department;
 import com.expense.segmentation.model.Role;
 import com.expense.segmentation.model.RoleType;
@@ -37,12 +40,18 @@ class DepartmentServiceTest {
 
     @InjectMocks private DepartmentService departmentService;
 
+    private DepartmentMapper departmentMapper;
+
     private Department department;
     private User manager;
     private Role managerRole;
 
     @BeforeEach
     void setUp() {
+        // Initialize real mapper
+        departmentMapper = new DepartmentMapper();
+        departmentService = new DepartmentService(departmentRepository, userRepository, departmentMapper);
+
         managerRole = new Role();
         managerRole.setId(UUID.randomUUID());
         managerRole.setName(RoleType.MANAGER);
@@ -93,7 +102,7 @@ class DepartmentServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> departmentService.createDepartment(request))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(DuplicateResourceException.class)
                 .hasMessageContaining("already exists");
     }
 
@@ -108,8 +117,8 @@ class DepartmentServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> departmentService.createDepartment(request))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Manager not found");
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("User not found");
     }
 
     @Test
@@ -155,7 +164,7 @@ class DepartmentServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> departmentService.getDepartmentById(nonExistingId))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Department not found");
     }
 
@@ -206,7 +215,7 @@ class DepartmentServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> departmentService.updateDepartment(nonExistingId, request))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Department not found");
     }
 
@@ -220,8 +229,8 @@ class DepartmentServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> departmentService.updateDepartment(department.getId(), request))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Manager not found");
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("User not found");
     }
 
     @Test

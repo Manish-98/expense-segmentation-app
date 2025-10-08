@@ -96,7 +96,7 @@ class AuthIntegrationTest {
     }
 
     @Test
-    void register_WithDuplicateEmail_ShouldReturnBadRequest() throws Exception {
+    void register_WithDuplicateEmail_ShouldReturnConflict() throws Exception {
         // Step 1: Register first user
         RegisterRequest firstRequest =
                 new RegisterRequest("First User", "duplicate@test.com", "password123");
@@ -115,7 +115,7 @@ class AuthIntegrationTest {
                         post("/auth/register")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(duplicateRequest)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isConflict());
     }
 
     @Test

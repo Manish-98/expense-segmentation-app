@@ -2,21 +2,22 @@ package com.expense.segmentation.controller;
 
 import com.expense.segmentation.dto.UpdateUserRequest;
 import com.expense.segmentation.dto.UserResponse;
-import com.expense.segmentation.model.User;
-import com.expense.segmentation.repository.UserRepository;
 import com.expense.segmentation.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @RestController
 @RequestMapping("/users")
 @RequiredArgsConstructor
@@ -25,12 +26,12 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserService userService;
-    private final UserRepository userRepository;
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Get all users", description = "Admin only - retrieves all users")
     public ResponseEntity<List<UserResponse>> getAllUsers() {
+        log.info("GET /users - Admin retrieving all users");
         List<UserResponse> users = userService.getAllUsers();
         return ResponseEntity.ok(users);
     }
@@ -43,13 +44,9 @@ public class UserController {
     public ResponseEntity<List<UserResponse>> getUsersInDepartment() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
+        log.info("GET /users/department - Manager {} retrieving department users", email);
 
-        User manager =
-                userRepository
-                        .findByEmail(email)
-                        .orElseThrow(() -> new RuntimeException("Manager not found"));
-
-        List<UserResponse> users = userService.getUsersByDepartment(manager.getId());
+        List<UserResponse> users = userService.getUsersByAuthenticatedManager(email);
         return ResponseEntity.ok(users);
     }
 
@@ -59,7 +56,8 @@ public class UserController {
             summary = "Update user",
             description = "Admin only - updates user's role or department")
     public ResponseEntity<UserResponse> updateUser(
-            @PathVariable UUID id, @RequestBody UpdateUserRequest request) {
+            @PathVariable UUID id, @Valid @RequestBody UpdateUserRequest request) {
+        log.info("PATCH /users/{} - Admin updating user", id);
         UserResponse updatedUser = userService.updateUser(id, request);
         return ResponseEntity.ok(updatedUser);
     }
@@ -70,6 +68,7 @@ public class UserController {
             summary = "Deactivate user",
             description = "Admin only - sets user status to INACTIVE")
     public ResponseEntity<Void> deactivateUser(@PathVariable UUID id) {
+        log.info("DELETE /users/{} - Admin deactivating user", id);
         userService.deactivateUser(id);
         return ResponseEntity.noContent().build();
     }

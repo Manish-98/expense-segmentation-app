@@ -7,6 +7,9 @@ import static org.mockito.Mockito.*;
 
 import com.expense.segmentation.dto.UpdateUserRequest;
 import com.expense.segmentation.dto.UserResponse;
+import com.expense.segmentation.exception.InvalidOperationException;
+import com.expense.segmentation.exception.ResourceNotFoundException;
+import com.expense.segmentation.mapper.UserMapper;
 import com.expense.segmentation.model.Department;
 import com.expense.segmentation.model.Role;
 import com.expense.segmentation.model.RoleType;
@@ -38,6 +41,8 @@ class UserServiceTest {
 
     @InjectMocks private UserService userService;
 
+    private UserMapper userMapper;
+
     private User user1;
     private User user2;
     private User manager;
@@ -47,6 +52,10 @@ class UserServiceTest {
 
     @BeforeEach
     void setUp() {
+        // Initialize real mapper
+        userMapper = new UserMapper();
+        userService = new UserService(userRepository, roleRepository, departmentRepository, userMapper);
+
         employeeRole = new Role();
         employeeRole.setId(UUID.randomUUID());
         employeeRole.setName(RoleType.EMPLOYEE);
@@ -139,8 +148,8 @@ class UserServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> userService.getUsersByDepartment(nonExistentId))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Manager not found");
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("User not found");
 
         verify(userRepository).findById(nonExistentId);
         verify(userRepository, never()).findByDepartmentId(any());
@@ -154,7 +163,7 @@ class UserServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> userService.getUsersByDepartment(manager.getId()))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(InvalidOperationException.class)
                 .hasMessageContaining("Manager is not assigned to any department");
 
         verify(userRepository).findById(manager.getId());
@@ -247,7 +256,7 @@ class UserServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> userService.updateUser(nonExistentId, request))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("User not found");
 
         verify(userRepository).findById(nonExistentId);
@@ -266,7 +275,7 @@ class UserServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> userService.updateUser(user1.getId(), request))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Role not found");
 
         verify(userRepository).findById(user1.getId());
@@ -286,7 +295,7 @@ class UserServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> userService.updateUser(user1.getId(), request))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Department not found");
 
         verify(userRepository).findById(user1.getId());
@@ -317,7 +326,7 @@ class UserServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> userService.deactivateUser(nonExistentId))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("User not found");
 
         verify(userRepository).findById(nonExistentId);

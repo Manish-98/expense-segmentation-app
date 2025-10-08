@@ -260,7 +260,7 @@ class UserManagementIntegrationTest {
     }
 
     @Test
-    void updateUser_WithNonExistentUserId_ShouldReturnBadRequest() throws Exception {
+    void updateUser_WithNonExistentUserId_ShouldReturnNotFound() throws Exception {
         UpdateUserRequest request = new UpdateUserRequest();
         request.setRole(RoleType.MANAGER);
 
@@ -271,7 +271,7 @@ class UserManagementIntegrationTest {
                                 .header("Authorization", "Bearer " + adminToken)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isNotFound());
     }
 
     // DELETE /users/{id} tests
@@ -307,12 +307,12 @@ class UserManagementIntegrationTest {
     }
 
     @Test
-    void deactivateUser_WithNonExistentUserId_ShouldReturnBadRequest() throws Exception {
+    void deactivateUser_WithNonExistentUserId_ShouldReturnNotFound() throws Exception {
         UUID nonExistentId = UUID.randomUUID();
 
         mockMvc.perform(
                         delete("/users/{id}", nonExistentId)
                                 .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isNotFound());
     }
 }
