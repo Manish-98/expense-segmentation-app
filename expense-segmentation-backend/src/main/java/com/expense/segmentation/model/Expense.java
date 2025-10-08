@@ -47,8 +47,9 @@ public class Expense {
     @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private String status = "SUBMITTED";
+    private ExpenseStatus status = ExpenseStatus.SUBMITTED;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)

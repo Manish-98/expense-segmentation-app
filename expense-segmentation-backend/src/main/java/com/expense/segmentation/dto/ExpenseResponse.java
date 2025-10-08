@@ -1,5 +1,6 @@
 package com.expense.segmentation.dto;
 
+import com.expense.segmentation.model.ExpenseStatus;
 import com.expense.segmentation.model.ExpenseType;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -25,7 +26,7 @@ public class ExpenseResponse {
     private UUID createdById;
     private String createdByName;
     private String createdByEmail;
-    private String status;
+    private ExpenseStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

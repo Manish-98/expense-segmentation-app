@@ -11,6 +11,7 @@ import com.expense.segmentation.dto.ExpenseResponse;
 import com.expense.segmentation.exception.ResourceNotFoundException;
 import com.expense.segmentation.mapper.ExpenseMapper;
 import com.expense.segmentation.model.Expense;
+import com.expense.segmentation.model.ExpenseStatus;
 import com.expense.segmentation.model.ExpenseType;
 import com.expense.segmentation.model.User;
 import com.expense.segmentation.repository.ExpenseRepository;
@@ -69,7 +70,7 @@ class ExpenseServiceTest {
         testExpense.setDescription("Test description");
         testExpense.setType(ExpenseType.EXPENSE);
         testExpense.setCreatedBy(testUser);
-        testExpense.setStatus("SUBMITTED");
+        testExpense.setStatus(ExpenseStatus.SUBMITTED);
 
         // Mock security context
         SecurityContextHolder.setContext(securityContext);
@@ -105,7 +106,7 @@ class ExpenseServiceTest {
         Expense savedExpense = expenseCaptor.getValue();
         assertThat(savedExpense.getVendor()).isEqualTo("Test Vendor");
         assertThat(savedExpense.getCreatedBy()).isEqualTo(testUser);
-        assertThat(savedExpense.getStatus()).isEqualTo("SUBMITTED");
+        assertThat(savedExpense.getStatus()).isEqualTo(ExpenseStatus.SUBMITTED);
     }
 
     @Test

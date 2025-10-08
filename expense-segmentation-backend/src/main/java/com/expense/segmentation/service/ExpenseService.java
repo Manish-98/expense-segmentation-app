@@ -5,6 +5,7 @@ import com.expense.segmentation.dto.ExpenseResponse;
 import com.expense.segmentation.exception.ResourceNotFoundException;
 import com.expense.segmentation.mapper.ExpenseMapper;
 import com.expense.segmentation.model.Expense;
+import com.expense.segmentation.model.ExpenseStatus;
 import com.expense.segmentation.model.User;
 import com.expense.segmentation.repository.ExpenseRepository;
 import com.expense.segmentation.repository.UserRepository;
@@ -75,6 +76,24 @@ public class ExpenseService {
             throw new ResourceNotFoundException("User", userId.toString());
         }
 
+        // Get current authenticated user
+        User currentUser = getCurrentUser();
+
+        // Authorization check: Users can only view their own expenses
+        // unless they have FINANCE or ADMIN roles
+        String currentUserRole = currentUser.getRole().getName();
+        boolean isFinanceOrAdmin =
+                "FINANCE".equals(currentUserRole) || "ADMIN".equals(currentUserRole);
+
+        if (!isFinanceOrAdmin && !currentUser.getId().equals(userId)) {
+            log.warn(
+                    "User {} attempted to access expenses of user {} without permission",
+                    currentUser.getId(),
+                    userId);
+            throw new SecurityException(
+                    "You are not authorized to view expenses for this user");
+        }
+
         List<ExpenseResponse> expenses =
                 expenseRepository.findByCreatedById(userId).stream()
                         .map(expenseMapper::toResponse)
@@ -94,7 +113,7 @@ public class ExpenseService {
         expense.setDescription(request.getDescription());
         expense.setType(request.getType());
         expense.setCreatedBy(currentUser);
-        expense.setStatus("SUBMITTED");
+        expense.setStatus(ExpenseStatus.SUBMITTED);
 
         return expense;
     }
