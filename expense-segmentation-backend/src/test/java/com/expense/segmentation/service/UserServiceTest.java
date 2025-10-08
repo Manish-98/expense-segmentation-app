@@ -179,6 +179,7 @@ class UserServiceTest {
 
         when(userRepository.findById(user1.getId())).thenReturn(Optional.of(user1));
         when(roleRepository.findByName(RoleType.MANAGER)).thenReturn(Optional.of(managerRole));
+        when(departmentRepository.save(any(Department.class))).thenReturn(department);
         when(userRepository.save(any(User.class))).thenReturn(user1);
 
         // When
@@ -189,6 +190,7 @@ class UserServiceTest {
         assertThat(response.getRole()).isEqualTo(RoleType.MANAGER);
         verify(userRepository).findById(user1.getId());
         verify(roleRepository).findByName(RoleType.MANAGER);
+        verify(departmentRepository).save(department); // Should update department manager
         verify(userRepository).save(user1);
     }
 
@@ -233,6 +235,7 @@ class UserServiceTest {
         when(roleRepository.findByName(RoleType.MANAGER)).thenReturn(Optional.of(managerRole));
         when(departmentRepository.findById(newDepartment.getId()))
                 .thenReturn(Optional.of(newDepartment));
+        when(departmentRepository.save(any(Department.class))).thenReturn(newDepartment);
         when(userRepository.save(any(User.class))).thenReturn(user1);
 
         // When
@@ -243,6 +246,7 @@ class UserServiceTest {
         verify(userRepository).findById(user1.getId());
         verify(roleRepository).findByName(RoleType.MANAGER);
         verify(departmentRepository).findById(newDepartment.getId());
+        verify(departmentRepository).save(newDepartment); // Should update department manager
         verify(userRepository).save(user1);
     }
 
@@ -350,6 +354,69 @@ class UserServiceTest {
         verify(userRepository).findById(user1.getId());
         verify(roleRepository, never()).findByName(any());
         verify(departmentRepository, never()).findById(any());
+        verify(userRepository).save(user1);
+    }
+
+    @Test
+    void updateUser_PromoteToManager_ShouldUpdateDepartmentManagerField() {
+        // Given
+        UpdateUserRequest request = new UpdateUserRequest();
+        request.setRole(RoleType.MANAGER);
+
+        when(userRepository.findById(user1.getId())).thenReturn(Optional.of(user1));
+        when(roleRepository.findByName(RoleType.MANAGER)).thenReturn(Optional.of(managerRole));
+        when(departmentRepository.save(any(Department.class))).thenReturn(department);
+        when(userRepository.save(any(User.class))).thenReturn(user1);
+
+        // When
+        UserResponse response = userService.updateUser(user1.getId(), request);
+
+        // Then
+        assertThat(response).isNotNull();
+        assertThat(response.getRole()).isEqualTo(RoleType.MANAGER);
+
+        // Verify that department's manager field is updated
+        verify(departmentRepository).save(department);
+        assertThat(department.getManager()).isEqualTo(user1);
+
+        verify(userRepository).findById(user1.getId());
+        verify(roleRepository).findByName(RoleType.MANAGER);
+        verify(userRepository).save(user1);
+    }
+
+    @Test
+    void updateUser_PromoteToManagerWithDepartmentChange_ShouldUpdateNewDepartmentManager() {
+        // Given
+        Department newDepartment = new Department();
+        newDepartment.setId(UUID.randomUUID());
+        newDepartment.setName("Sales");
+        newDepartment.setCode("SALES");
+
+        UpdateUserRequest request = new UpdateUserRequest();
+        request.setRole(RoleType.MANAGER);
+        request.setDepartmentId(newDepartment.getId());
+
+        when(userRepository.findById(user1.getId())).thenReturn(Optional.of(user1));
+        when(roleRepository.findByName(RoleType.MANAGER)).thenReturn(Optional.of(managerRole));
+        when(departmentRepository.findById(newDepartment.getId()))
+                .thenReturn(Optional.of(newDepartment));
+        when(departmentRepository.save(any(Department.class))).thenReturn(newDepartment);
+        when(userRepository.save(any(User.class))).thenReturn(user1);
+
+        // When
+        UserResponse response = userService.updateUser(user1.getId(), request);
+
+        // Then
+        assertThat(response).isNotNull();
+        assertThat(response.getRole()).isEqualTo(RoleType.MANAGER);
+
+        // Verify that the new department's manager field is updated
+        verify(departmentRepository).save(newDepartment);
+        assertThat(newDepartment.getManager()).isEqualTo(user1);
+
+        verify(userRepository).findById(user1.getId());
+        verify(roleRepository).findByName(RoleType.MANAGER);
+        verify(departmentRepository).findById(newDepartment.getId());
         verify(userRepository).save(user1);
     }
 }

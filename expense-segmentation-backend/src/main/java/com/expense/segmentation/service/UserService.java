@@ -80,6 +80,9 @@ public class UserService {
                                     return new ResourceNotFoundException("User", userId.toString());
                                 });
 
+        Department targetDepartment = null;
+        boolean isBecomingManager = false;
+
         // Update role if provided
         if (request.getRole() != null) {
             log.debug("Updating role for user {} to {}", userId, request.getRole());
@@ -93,6 +96,7 @@ public class UserService {
                                                 "Role", "name", request.getRole().toString());
                                     });
             user.setRole(role);
+            isBecomingManager = request.getRole() == com.expense.segmentation.model.RoleType.MANAGER;
         }
 
         // Update department if provided
@@ -110,6 +114,18 @@ public class UserService {
                                                 "Department", request.getDepartmentId().toString());
                                     });
             user.setDepartment(department);
+            targetDepartment = department;
+        } else if (isBecomingManager && user.getDepartment() != null) {
+            // If user is becoming a manager but department wasn't changed, use existing department
+            targetDepartment = user.getDepartment();
+        }
+
+        // If user is becoming a manager, update the department's manager field
+        if (isBecomingManager && targetDepartment != null) {
+            log.debug("Setting user {} as manager of department {}", userId, targetDepartment.getId());
+            targetDepartment.setManager(user);
+            departmentRepository.save(targetDepartment);
+            log.info("Successfully set user {} as manager of department {}", userId, targetDepartment.getId());
         }
 
         User updatedUser = userRepository.save(user);
