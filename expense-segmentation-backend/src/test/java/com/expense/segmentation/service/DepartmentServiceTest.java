@@ -84,7 +84,6 @@ class DepartmentServiceTest {
         when(departmentRepository.existsByCode("ENG")).thenReturn(false);
         when(userRepository.findById(manager.getId())).thenReturn(Optional.of(manager));
         when(roleRepository.findByName(RoleType.MANAGER)).thenReturn(Optional.of(managerRole));
-        when(userRepository.save(any(User.class))).thenReturn(manager);
         when(departmentRepository.save(any(Department.class))).thenReturn(department);
 
         // When
@@ -97,7 +96,9 @@ class DepartmentServiceTest {
         assertThat(response.getManagerId()).isEqualTo(manager.getId());
         assertThat(response.getManagerName()).isEqualTo("Manager User");
         verify(departmentRepository).save(any(Department.class));
-        verify(userRepository).save(any(User.class)); // Verify user is updated
+        // Verify user's role and department are updated (via JPA change tracking)
+        assertThat(manager.getRole()).isEqualTo(managerRole);
+        assertThat(manager.getDepartment()).isEqualTo(department);
     }
 
     @Test
@@ -201,7 +202,6 @@ class DepartmentServiceTest {
         when(departmentRepository.findById(department.getId())).thenReturn(Optional.of(department));
         when(userRepository.findById(newManager.getId())).thenReturn(Optional.of(newManager));
         when(roleRepository.findByName(RoleType.MANAGER)).thenReturn(Optional.of(managerRole));
-        when(userRepository.save(any(User.class))).thenReturn(newManager);
         when(departmentRepository.save(any(Department.class))).thenReturn(department);
 
         // When
@@ -211,8 +211,10 @@ class DepartmentServiceTest {
         // Then
         assertThat(response).isNotNull();
         verify(userRepository).findById(newManager.getId());
-        verify(userRepository).save(any(User.class)); // Verify user is updated
         verify(departmentRepository).save(any(Department.class));
+        // Verify user's role and department are updated (via JPA change tracking)
+        assertThat(newManager.getRole()).isEqualTo(managerRole);
+        assertThat(newManager.getDepartment()).isEqualTo(department);
     }
 
     @Test

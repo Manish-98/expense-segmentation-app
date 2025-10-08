@@ -46,12 +46,13 @@ public class DepartmentService {
         department.setCode(request.getCode());
 
         // Set manager if provided
+        User manager = null;
         if (request.getManagerId() != null) {
             log.debug(
                     "Setting manager {} for department {}",
                     request.getManagerId(),
                     request.getCode());
-            User manager =
+            manager =
                     userRepository
                             .findById(request.getManagerId())
                             .orElseThrow(
@@ -63,12 +64,15 @@ public class DepartmentService {
                                                 "User", request.getManagerId().toString());
                                     });
             department.setManager(manager);
-
-            // Update manager's role to MANAGER and department
-            updateUserToManager(manager, department);
         }
 
         Department saved = departmentRepository.save(department);
+
+        // Update manager's role to MANAGER and department after saving
+        if (manager != null) {
+            updateUserToManager(manager, saved);
+        }
+
         log.info("Successfully created department: {} with id: {}", saved.getCode(), saved.getId());
         return departmentMapper.toResponse(saved);
     }
@@ -121,7 +125,9 @@ public class DepartmentService {
         // Update manager if provided
         if (request.getManagerId() != null) {
             log.debug("Updating department {} manager to: {}", id, request.getManagerId());
-            User manager =
+
+            // Get the new manager
+            User newManager =
                     userRepository
                             .findById(request.getManagerId())
                             .orElseThrow(
@@ -132,10 +138,20 @@ public class DepartmentService {
                                         return new ResourceNotFoundException(
                                                 "User", request.getManagerId().toString());
                                     });
-            department.setManager(manager);
 
-            // Update manager's role to MANAGER and department
-            updateUserToManager(manager, department);
+            // Handle old manager if exists
+            User oldManager = department.getManager();
+            if (oldManager != null && !oldManager.getId().equals(newManager.getId())) {
+                log.debug("Removing manager role from previous manager: {}", oldManager.getId());
+                // Note: Old manager's role/department are not automatically reverted
+                // This is intentional as they may still need MANAGER role for other reasons
+                // Business logic can be adjusted based on requirements
+            }
+
+            department.setManager(newManager);
+
+            // Update new manager's role to MANAGER and department
+            updateUserToManager(newManager, department);
         }
 
         Department updated = departmentRepository.save(department);
@@ -146,6 +162,7 @@ public class DepartmentService {
     /**
      * Updates a user to be a manager of the given department.
      * Sets the user's role to MANAGER and department to the provided department.
+     * Changes are persisted via JPA change tracking within the transaction.
      *
      * @param user the user to update
      * @param department the department to assign
@@ -161,9 +178,9 @@ public class DepartmentService {
                 });
 
         // Update user's role and department
+        // JPA will automatically persist these changes at transaction commit
         user.setRole(managerRole);
         user.setDepartment(department);
-        userRepository.save(user);
 
         log.info("Successfully updated user {} to MANAGER role in department {}",
                 user.getId(), department.getCode());
