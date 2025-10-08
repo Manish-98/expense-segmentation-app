@@ -54,16 +54,26 @@ const DashboardPage = () => {
               </p>
 
               {/* Quick Actions */}
-              {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (
+              {(user?.role === 'ADMIN' || user?.role === 'MANAGER' || user?.role === 'FINANCE') && (
                 <div className="mt-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">Quick Actions</h3>
                   <div className="flex flex-wrap gap-3">
-                    <button
-                      onClick={() => navigate('/users')}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                    >
-                      Manage Users
-                    </button>
+                    {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (
+                      <button
+                        onClick={() => navigate('/users')}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                      >
+                        Manage Users
+                      </button>
+                    )}
+                    {(user?.role === 'ADMIN' || user?.role === 'FINANCE') && (
+                      <button
+                        onClick={() => navigate('/departments')}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                      >
+                        {user?.role === 'ADMIN' ? 'Manage Departments' : 'View Departments'}
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
