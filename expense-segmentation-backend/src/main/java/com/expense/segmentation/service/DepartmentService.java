@@ -142,8 +142,10 @@ public class DepartmentService {
             // Handle old manager if exists
             User oldManager = department.getManager();
             if (oldManager != null && !oldManager.getId().equals(newManager.getId())) {
-                log.info("Replacing department manager: old={}, new={}",
-                        oldManager.getId(), newManager.getId());
+                log.info(
+                        "Replacing department manager: old={}, new={}",
+                        oldManager.getId(),
+                        newManager.getId());
                 // Note: Old manager's role and department are NOT automatically reverted.
                 // Business rules:
                 // 1. User may be managing multiple departments
@@ -164,22 +166,28 @@ public class DepartmentService {
     }
 
     /**
-     * Updates a user to be a manager of the given department.
-     * Sets the user's role to MANAGER and department to the provided department.
-     * Explicitly saves the user to ensure changes are persisted.
+     * Updates a user to be a manager of the given department. Sets the user's role to MANAGER and
+     * department to the provided department. Explicitly saves the user to ensure changes are
+     * persisted.
      *
      * @param user the user to update
      * @param department the department to assign
      */
     private void updateUserToManager(User user, Department department) {
-        log.debug("Updating user {} to be manager of department {}", user.getId(), department.getId());
+        log.debug(
+                "Updating user {} to be manager of department {}",
+                user.getId(),
+                department.getId());
 
         // Get MANAGER role
-        Role managerRole = roleRepository.findByName(RoleType.MANAGER)
-                .orElseThrow(() -> {
-                    log.error("MANAGER role not found in database");
-                    return new ResourceNotFoundException("Role", "MANAGER");
-                });
+        Role managerRole =
+                roleRepository
+                        .findByName(RoleType.MANAGER)
+                        .orElseThrow(
+                                () -> {
+                                    log.error("MANAGER role not found in database");
+                                    return new ResourceNotFoundException("Role", "MANAGER");
+                                });
 
         // Update user's role and department
         user.setRole(managerRole);
@@ -188,7 +196,9 @@ public class DepartmentService {
         // Explicitly save the user for clarity and safety
         userRepository.save(user);
 
-        log.info("Successfully updated user {} to MANAGER role in department {}",
-                user.getId(), department.getCode());
+        log.info(
+                "Successfully updated user {} to MANAGER role in department {}",
+                user.getId(),
+                department.getCode());
     }
 }

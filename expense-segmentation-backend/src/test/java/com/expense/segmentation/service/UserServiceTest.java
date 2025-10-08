@@ -433,13 +433,16 @@ class UserServiceTest {
         UpdateUserRequest request = new UpdateUserRequest();
         request.setRole(RoleType.MANAGER);
 
-        when(userRepository.findById(userWithoutDept.getId())).thenReturn(Optional.of(userWithoutDept));
+        when(userRepository.findById(userWithoutDept.getId()))
+                .thenReturn(Optional.of(userWithoutDept));
         when(roleRepository.findByName(RoleType.MANAGER)).thenReturn(Optional.of(managerRole));
 
         // When & Then
         assertThatThrownBy(() -> userService.updateUser(userWithoutDept.getId(), request))
                 .isInstanceOf(InvalidOperationException.class)
-                .hasMessageContaining("User must be assigned to a department before being promoted to MANAGER role");
+                .hasMessageContaining(
+                        "User must be assigned to a department before being promoted to MANAGER"
+                                + " role");
 
         verify(userRepository).findById(userWithoutDept.getId());
         verify(roleRepository).findByName(RoleType.MANAGER);
@@ -521,7 +524,8 @@ class UserServiceTest {
         when(userRepository.findById(manager.getId())).thenReturn(Optional.of(manager));
         when(departmentRepository.findById(newDepartment.getId()))
                 .thenReturn(Optional.of(newDepartment));
-        when(departmentRepository.save(any(Department.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(departmentRepository.save(any(Department.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
         when(userRepository.save(any(User.class))).thenReturn(manager);
 
         // When
@@ -563,7 +567,8 @@ class UserServiceTest {
         when(userRepository.findById(manager.getId())).thenReturn(Optional.of(manager));
         when(departmentRepository.findById(newDepartment.getId()))
                 .thenReturn(Optional.of(newDepartment));
-        when(departmentRepository.save(any(Department.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(departmentRepository.save(any(Department.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When & Then
         assertThatThrownBy(() -> userService.updateUser(manager.getId(), request))
@@ -589,7 +594,8 @@ class UserServiceTest {
         UpdateUserRequest request = new UpdateUserRequest();
         request.setRole(RoleType.EMPLOYEE);
 
-        when(userRepository.findById(managerWithoutDept.getId())).thenReturn(Optional.of(managerWithoutDept));
+        when(userRepository.findById(managerWithoutDept.getId()))
+                .thenReturn(Optional.of(managerWithoutDept));
         when(roleRepository.findByName(RoleType.EMPLOYEE)).thenReturn(Optional.of(employeeRole));
         when(userRepository.save(any(User.class))).thenReturn(managerWithoutDept);
 
