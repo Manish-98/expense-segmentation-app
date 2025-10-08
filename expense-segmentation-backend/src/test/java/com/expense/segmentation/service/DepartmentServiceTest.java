@@ -85,6 +85,7 @@ class DepartmentServiceTest {
         when(userRepository.findById(manager.getId())).thenReturn(Optional.of(manager));
         when(roleRepository.findByName(RoleType.MANAGER)).thenReturn(Optional.of(managerRole));
         when(departmentRepository.save(any(Department.class))).thenReturn(department);
+        when(userRepository.save(any(User.class))).thenReturn(manager);
 
         // When
         DepartmentResponse response = departmentService.createDepartment(request);
@@ -96,7 +97,8 @@ class DepartmentServiceTest {
         assertThat(response.getManagerId()).isEqualTo(manager.getId());
         assertThat(response.getManagerName()).isEqualTo("Manager User");
         verify(departmentRepository).save(any(Department.class));
-        // Verify user's role and department are updated (via JPA change tracking)
+        verify(userRepository).save(manager); // Verify explicit user save
+        // Verify user's role and department are updated
         assertThat(manager.getRole()).isEqualTo(managerRole);
         assertThat(manager.getDepartment()).isEqualTo(department);
     }
@@ -203,6 +205,7 @@ class DepartmentServiceTest {
         when(userRepository.findById(newManager.getId())).thenReturn(Optional.of(newManager));
         when(roleRepository.findByName(RoleType.MANAGER)).thenReturn(Optional.of(managerRole));
         when(departmentRepository.save(any(Department.class))).thenReturn(department);
+        when(userRepository.save(any(User.class))).thenReturn(newManager);
 
         // When
         DepartmentResponse response =
@@ -212,7 +215,8 @@ class DepartmentServiceTest {
         assertThat(response).isNotNull();
         verify(userRepository).findById(newManager.getId());
         verify(departmentRepository).save(any(Department.class));
-        // Verify user's role and department are updated (via JPA change tracking)
+        verify(userRepository).save(newManager); // Verify explicit user save
+        // Verify user's role and department are updated
         assertThat(newManager.getRole()).isEqualTo(managerRole);
         assertThat(newManager.getDepartment()).isEqualTo(department);
     }
@@ -286,5 +290,68 @@ class DepartmentServiceTest {
         assertThat(response.getManagerId()).isNull();
         assertThat(response.getManagerName()).isNull();
         verify(departmentRepository).save(any(Department.class));
+    }
+
+    @Test
+    void updateDepartment_WhenReplacingManager_ShouldLogChange() {
+        // Given - Department already has a manager
+        User oldManager = new User();
+        oldManager.setId(UUID.randomUUID());
+        oldManager.setName("Old Manager");
+        oldManager.setRole(managerRole);
+
+        Department existingDepartment = new Department();
+        existingDepartment.setId(UUID.randomUUID());
+        existingDepartment.setName("Sales");
+        existingDepartment.setCode("SALES");
+        existingDepartment.setManager(oldManager);
+
+        User newManager = new User();
+        newManager.setId(UUID.randomUUID());
+        newManager.setName("New Manager");
+
+        UpdateDepartmentRequest request = new UpdateDepartmentRequest(null, newManager.getId());
+        when(departmentRepository.findById(existingDepartment.getId()))
+                .thenReturn(Optional.of(existingDepartment));
+        when(userRepository.findById(newManager.getId())).thenReturn(Optional.of(newManager));
+        when(roleRepository.findByName(RoleType.MANAGER)).thenReturn(Optional.of(managerRole));
+        when(departmentRepository.save(any(Department.class))).thenReturn(existingDepartment);
+        when(userRepository.save(any(User.class))).thenReturn(newManager);
+
+        // When
+        DepartmentResponse response =
+                departmentService.updateDepartment(existingDepartment.getId(), request);
+
+        // Then
+        assertThat(response).isNotNull();
+        assertThat(existingDepartment.getManager()).isEqualTo(newManager);
+        // Old manager's role remains unchanged (business rule)
+        assertThat(oldManager.getRole()).isEqualTo(managerRole);
+        verify(userRepository).save(newManager);
+    }
+
+    @Test
+    void createDepartment_WithUserAlreadyManager_ShouldStillAssign() {
+        // Given - User is already a manager with MANAGER role
+        manager.setRole(managerRole);
+
+        CreateDepartmentRequest request =
+                new CreateDepartmentRequest("Engineering", "ENG", manager.getId());
+        when(departmentRepository.existsByCode("ENG")).thenReturn(false);
+        when(userRepository.findById(manager.getId())).thenReturn(Optional.of(manager));
+        when(roleRepository.findByName(RoleType.MANAGER)).thenReturn(Optional.of(managerRole));
+        when(departmentRepository.save(any(Department.class))).thenReturn(department);
+        when(userRepository.save(any(User.class))).thenReturn(manager);
+
+        // When
+        DepartmentResponse response = departmentService.createDepartment(request);
+
+        // Then
+        assertThat(response).isNotNull();
+        assertThat(response.getManagerId()).isEqualTo(manager.getId());
+        // User should still be saved with MANAGER role and department
+        verify(userRepository).save(manager);
+        assertThat(manager.getRole()).isEqualTo(managerRole);
+        assertThat(manager.getDepartment()).isEqualTo(department);
     }
 }

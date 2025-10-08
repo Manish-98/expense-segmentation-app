@@ -142,10 +142,14 @@ public class DepartmentService {
             // Handle old manager if exists
             User oldManager = department.getManager();
             if (oldManager != null && !oldManager.getId().equals(newManager.getId())) {
-                log.debug("Removing manager role from previous manager: {}", oldManager.getId());
-                // Note: Old manager's role/department are not automatically reverted
-                // This is intentional as they may still need MANAGER role for other reasons
-                // Business logic can be adjusted based on requirements
+                log.info("Replacing department manager: old={}, new={}",
+                        oldManager.getId(), newManager.getId());
+                // Note: Old manager's role and department are NOT automatically reverted.
+                // Business rules:
+                // 1. User may be managing multiple departments
+                // 2. User may need MANAGER role for other responsibilities
+                // 3. Manual intervention required if role demotion is needed
+                // If automatic demotion is required in the future, implement it here
             }
 
             department.setManager(newManager);
@@ -162,7 +166,7 @@ public class DepartmentService {
     /**
      * Updates a user to be a manager of the given department.
      * Sets the user's role to MANAGER and department to the provided department.
-     * Changes are persisted via JPA change tracking within the transaction.
+     * Explicitly saves the user to ensure changes are persisted.
      *
      * @param user the user to update
      * @param department the department to assign
@@ -178,9 +182,11 @@ public class DepartmentService {
                 });
 
         // Update user's role and department
-        // JPA will automatically persist these changes at transaction commit
         user.setRole(managerRole);
         user.setDepartment(department);
+
+        // Explicitly save the user for clarity and safety
+        userRepository.save(user);
 
         log.info("Successfully updated user {} to MANAGER role in department {}",
                 user.getId(), department.getCode());
