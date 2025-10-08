@@ -4,6 +4,7 @@ import LoginPage from '../pages/LoginPage';
 import RegisterPage from '../pages/RegisterPage';
 import DashboardPage from '../pages/DashboardPage';
 import UserManagementPage from '../pages/UserManagementPage';
+import DepartmentManagementPage from '../pages/DepartmentManagementPage';
 
 // Protected Route wrapper
 const ProtectedRoute = ({ children }) => {
@@ -68,6 +69,14 @@ const AppRouter = () => {
           element={
             <ProtectedRoute>
               <UserManagementPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/departments"
+          element={
+            <ProtectedRoute>
+              <DepartmentManagementPage />
             </ProtectedRoute>
           }
         />
