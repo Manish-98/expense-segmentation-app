@@ -179,6 +179,7 @@ class UserServiceTest {
 
         when(userRepository.findById(user1.getId())).thenReturn(Optional.of(user1));
         when(roleRepository.findByName(RoleType.MANAGER)).thenReturn(Optional.of(managerRole));
+        when(departmentRepository.save(any(Department.class))).thenReturn(department);
         when(userRepository.save(any(User.class))).thenReturn(user1);
 
         // When
@@ -189,6 +190,7 @@ class UserServiceTest {
         assertThat(response.getRole()).isEqualTo(RoleType.MANAGER);
         verify(userRepository).findById(user1.getId());
         verify(roleRepository).findByName(RoleType.MANAGER);
+        verify(departmentRepository).save(department); // Should update department manager
         verify(userRepository).save(user1);
     }
 
@@ -233,6 +235,7 @@ class UserServiceTest {
         when(roleRepository.findByName(RoleType.MANAGER)).thenReturn(Optional.of(managerRole));
         when(departmentRepository.findById(newDepartment.getId()))
                 .thenReturn(Optional.of(newDepartment));
+        when(departmentRepository.save(any(Department.class))).thenReturn(newDepartment);
         when(userRepository.save(any(User.class))).thenReturn(user1);
 
         // When
@@ -243,6 +246,7 @@ class UserServiceTest {
         verify(userRepository).findById(user1.getId());
         verify(roleRepository).findByName(RoleType.MANAGER);
         verify(departmentRepository).findById(newDepartment.getId());
+        verify(departmentRepository).save(newDepartment); // Should update department manager
         verify(userRepository).save(user1);
     }
 
@@ -350,6 +354,316 @@ class UserServiceTest {
         verify(userRepository).findById(user1.getId());
         verify(roleRepository, never()).findByName(any());
         verify(departmentRepository, never()).findById(any());
+        verify(userRepository).save(user1);
+    }
+
+    @Test
+    void updateUser_PromoteToManager_ShouldUpdateDepartmentManagerField() {
+        // Given
+        UpdateUserRequest request = new UpdateUserRequest();
+        request.setRole(RoleType.MANAGER);
+
+        when(userRepository.findById(user1.getId())).thenReturn(Optional.of(user1));
+        when(roleRepository.findByName(RoleType.MANAGER)).thenReturn(Optional.of(managerRole));
+        when(departmentRepository.save(any(Department.class))).thenReturn(department);
+        when(userRepository.save(any(User.class))).thenReturn(user1);
+
+        // When
+        UserResponse response = userService.updateUser(user1.getId(), request);
+
+        // Then
+        assertThat(response).isNotNull();
+        assertThat(response.getRole()).isEqualTo(RoleType.MANAGER);
+
+        // Verify that department's manager field is updated
+        verify(departmentRepository).save(department);
+        assertThat(department.getManager()).isEqualTo(user1);
+
+        verify(userRepository).findById(user1.getId());
+        verify(roleRepository).findByName(RoleType.MANAGER);
+        verify(userRepository).save(user1);
+    }
+
+    @Test
+    void updateUser_PromoteToManagerWithDepartmentChange_ShouldUpdateNewDepartmentManager() {
+        // Given
+        Department newDepartment = new Department();
+        newDepartment.setId(UUID.randomUUID());
+        newDepartment.setName("Sales");
+        newDepartment.setCode("SALES");
+
+        UpdateUserRequest request = new UpdateUserRequest();
+        request.setRole(RoleType.MANAGER);
+        request.setDepartmentId(newDepartment.getId());
+
+        when(userRepository.findById(user1.getId())).thenReturn(Optional.of(user1));
+        when(roleRepository.findByName(RoleType.MANAGER)).thenReturn(Optional.of(managerRole));
+        when(departmentRepository.findById(newDepartment.getId()))
+                .thenReturn(Optional.of(newDepartment));
+        when(departmentRepository.save(any(Department.class))).thenReturn(newDepartment);
+        when(userRepository.save(any(User.class))).thenReturn(user1);
+
+        // When
+        UserResponse response = userService.updateUser(user1.getId(), request);
+
+        // Then
+        assertThat(response).isNotNull();
+        assertThat(response.getRole()).isEqualTo(RoleType.MANAGER);
+
+        // Verify that the new department's manager field is updated
+        verify(departmentRepository).save(newDepartment);
+        assertThat(newDepartment.getManager()).isEqualTo(user1);
+
+        verify(userRepository).findById(user1.getId());
+        verify(roleRepository).findByName(RoleType.MANAGER);
+        verify(departmentRepository).findById(newDepartment.getId());
+        verify(userRepository).save(user1);
+    }
+
+    @Test
+    void updateUser_PromoteToManagerWithoutDepartment_ShouldThrowException() {
+        // Given
+        User userWithoutDept = new User();
+        userWithoutDept.setId(UUID.randomUUID());
+        userWithoutDept.setName("User Without Dept");
+        userWithoutDept.setEmail("nodept@example.com");
+        userWithoutDept.setRole(employeeRole);
+        userWithoutDept.setDepartment(null);
+
+        UpdateUserRequest request = new UpdateUserRequest();
+        request.setRole(RoleType.MANAGER);
+
+        when(userRepository.findById(userWithoutDept.getId())).thenReturn(Optional.of(userWithoutDept));
+        when(roleRepository.findByName(RoleType.MANAGER)).thenReturn(Optional.of(managerRole));
+
+        // When & Then
+        assertThatThrownBy(() -> userService.updateUser(userWithoutDept.getId(), request))
+                .isInstanceOf(InvalidOperationException.class)
+                .hasMessageContaining("User must be assigned to a department before being promoted to MANAGER role");
+
+        verify(userRepository).findById(userWithoutDept.getId());
+        verify(roleRepository).findByName(RoleType.MANAGER);
+        verify(departmentRepository, never()).save(any());
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void updateUser_PromoteToManagerWhenDepartmentHasManager_ShouldThrowException() {
+        // Given
+        User existingManager = new User();
+        existingManager.setId(UUID.randomUUID());
+        existingManager.setName("Existing Manager");
+        existingManager.setEmail("existing@example.com");
+        existingManager.setRole(managerRole);
+
+        department.setManager(existingManager);
+
+        UpdateUserRequest request = new UpdateUserRequest();
+        request.setRole(RoleType.MANAGER);
+
+        when(userRepository.findById(user1.getId())).thenReturn(Optional.of(user1));
+        when(roleRepository.findByName(RoleType.MANAGER)).thenReturn(Optional.of(managerRole));
+
+        // When & Then
+        assertThatThrownBy(() -> userService.updateUser(user1.getId(), request))
+                .isInstanceOf(InvalidOperationException.class)
+                .hasMessageContaining("already has a manager")
+                .hasMessageContaining("Existing Manager");
+
+        verify(userRepository).findById(user1.getId());
+        verify(roleRepository).findByName(RoleType.MANAGER);
+        verify(departmentRepository, never()).save(any());
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void updateUser_DemoteManagerToEmployee_ShouldClearDepartmentManager() {
+        // Given
+        department.setManager(manager);
+
+        UpdateUserRequest request = new UpdateUserRequest();
+        request.setRole(RoleType.EMPLOYEE);
+
+        when(userRepository.findById(manager.getId())).thenReturn(Optional.of(manager));
+        when(roleRepository.findByName(RoleType.EMPLOYEE)).thenReturn(Optional.of(employeeRole));
+        when(departmentRepository.save(any(Department.class))).thenReturn(department);
+        when(userRepository.save(any(User.class))).thenReturn(manager);
+
+        // When
+        UserResponse response = userService.updateUser(manager.getId(), request);
+
+        // Then
+        assertThat(response).isNotNull();
+        assertThat(response.getRole()).isEqualTo(RoleType.EMPLOYEE);
+
+        // Verify department's manager field is cleared
+        verify(departmentRepository).save(department);
+        assertThat(department.getManager()).isNull();
+
+        verify(userRepository).findById(manager.getId());
+        verify(roleRepository).findByName(RoleType.EMPLOYEE);
+        verify(userRepository).save(manager);
+    }
+
+    @Test
+    void updateUser_ManagerChangingDepartments_ShouldClearOldDepartmentManager() {
+        // Given
+        Department newDepartment = new Department();
+        newDepartment.setId(UUID.randomUUID());
+        newDepartment.setName("Sales");
+        newDepartment.setCode("SALES");
+
+        department.setManager(manager);
+
+        UpdateUserRequest request = new UpdateUserRequest();
+        request.setDepartmentId(newDepartment.getId());
+
+        when(userRepository.findById(manager.getId())).thenReturn(Optional.of(manager));
+        when(departmentRepository.findById(newDepartment.getId()))
+                .thenReturn(Optional.of(newDepartment));
+        when(departmentRepository.save(any(Department.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.save(any(User.class))).thenReturn(manager);
+
+        // When
+        UserResponse response = userService.updateUser(manager.getId(), request);
+
+        // Then
+        assertThat(response).isNotNull();
+
+        // Verify old department's manager field is cleared
+        verify(departmentRepository, times(2)).save(any(Department.class));
+        assertThat(department.getManager()).isNull();
+        assertThat(newDepartment.getManager()).isEqualTo(manager);
+
+        verify(userRepository).findById(manager.getId());
+        verify(departmentRepository).findById(newDepartment.getId());
+        verify(userRepository).save(manager);
+    }
+
+    @Test
+    void updateUser_ManagerChangingToNewDepartmentWithExistingManager_ShouldThrowException() {
+        // Given
+        Department newDepartment = new Department();
+        newDepartment.setId(UUID.randomUUID());
+        newDepartment.setName("Sales");
+        newDepartment.setCode("SALES");
+
+        User existingManagerInNewDept = new User();
+        existingManagerInNewDept.setId(UUID.randomUUID());
+        existingManagerInNewDept.setName("Sales Manager");
+        existingManagerInNewDept.setEmail("sales@example.com");
+        existingManagerInNewDept.setRole(managerRole);
+
+        newDepartment.setManager(existingManagerInNewDept);
+        department.setManager(manager);
+
+        UpdateUserRequest request = new UpdateUserRequest();
+        request.setDepartmentId(newDepartment.getId());
+
+        when(userRepository.findById(manager.getId())).thenReturn(Optional.of(manager));
+        when(departmentRepository.findById(newDepartment.getId()))
+                .thenReturn(Optional.of(newDepartment));
+        when(departmentRepository.save(any(Department.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // When & Then
+        assertThatThrownBy(() -> userService.updateUser(manager.getId(), request))
+                .isInstanceOf(InvalidOperationException.class)
+                .hasMessageContaining("already has a manager");
+
+        // Verify old department's manager is cleared but user is not saved
+        verify(departmentRepository).save(department);
+        assertThat(department.getManager()).isNull();
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void updateUser_DemoteManagerWithoutDepartment_ShouldNotThrowException() {
+        // Given
+        User managerWithoutDept = new User();
+        managerWithoutDept.setId(UUID.randomUUID());
+        managerWithoutDept.setName("Manager Without Dept");
+        managerWithoutDept.setEmail("mgrnodept@example.com");
+        managerWithoutDept.setRole(managerRole);
+        managerWithoutDept.setDepartment(null);
+
+        UpdateUserRequest request = new UpdateUserRequest();
+        request.setRole(RoleType.EMPLOYEE);
+
+        when(userRepository.findById(managerWithoutDept.getId())).thenReturn(Optional.of(managerWithoutDept));
+        when(roleRepository.findByName(RoleType.EMPLOYEE)).thenReturn(Optional.of(employeeRole));
+        when(userRepository.save(any(User.class))).thenReturn(managerWithoutDept);
+
+        // When
+        UserResponse response = userService.updateUser(managerWithoutDept.getId(), request);
+
+        // Then
+        assertThat(response).isNotNull();
+        assertThat(response.getRole()).isEqualTo(RoleType.EMPLOYEE);
+
+        verify(userRepository).findById(managerWithoutDept.getId());
+        verify(roleRepository).findByName(RoleType.EMPLOYEE);
+        verify(departmentRepository, never()).save(any());
+        verify(userRepository).save(managerWithoutDept);
+    }
+
+    @Test
+    void updateUser_PromoteToManagerInSameDepartmentAsExistingManager_ShouldThrowException() {
+        // Given
+        department.setManager(manager);
+
+        UpdateUserRequest request = new UpdateUserRequest();
+        request.setRole(RoleType.MANAGER);
+        // user1 is already in the same department
+
+        when(userRepository.findById(user1.getId())).thenReturn(Optional.of(user1));
+        when(roleRepository.findByName(RoleType.MANAGER)).thenReturn(Optional.of(managerRole));
+
+        // When & Then
+        assertThatThrownBy(() -> userService.updateUser(user1.getId(), request))
+                .isInstanceOf(InvalidOperationException.class)
+                .hasMessageContaining("already has a manager");
+
+        verify(userRepository).findById(user1.getId());
+        verify(roleRepository).findByName(RoleType.MANAGER);
+        verify(departmentRepository, never()).save(any());
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void deactivateUser_WhenUserIsManager_ShouldClearDepartmentManager() {
+        // Given
+        department.setManager(manager);
+
+        when(userRepository.findById(manager.getId())).thenReturn(Optional.of(manager));
+        when(departmentRepository.save(any(Department.class))).thenReturn(department);
+        when(userRepository.save(any(User.class))).thenReturn(manager);
+
+        // When
+        userService.deactivateUser(manager.getId());
+
+        // Then
+        assertThat(manager.getStatus()).isEqualTo(UserStatus.INACTIVE);
+        assertThat(department.getManager()).isNull();
+
+        verify(userRepository).findById(manager.getId());
+        verify(departmentRepository).save(department);
+        verify(userRepository).save(manager);
+    }
+
+    @Test
+    void deactivateUser_WhenUserIsNotManager_ShouldNotUpdateDepartment() {
+        // Given
+        when(userRepository.findById(user1.getId())).thenReturn(Optional.of(user1));
+        when(userRepository.save(any(User.class))).thenReturn(user1);
+
+        // When
+        userService.deactivateUser(user1.getId());
+
+        // Then
+        assertThat(user1.getStatus()).isEqualTo(UserStatus.INACTIVE);
+
+        verify(userRepository).findById(user1.getId());
+        verify(departmentRepository, never()).save(any());
         verify(userRepository).save(user1);
     }
 }

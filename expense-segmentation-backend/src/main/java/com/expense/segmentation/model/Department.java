@@ -37,6 +37,9 @@ public class Department {
     @ToString.Exclude
     private List<User> users = new ArrayList<>();
 
+    @Version
+    private Long version;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
