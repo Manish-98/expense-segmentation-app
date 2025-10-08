@@ -203,8 +203,7 @@ class ExpenseServiceTest {
         // Arrange
         UUID userId = testUser.getId();
         when(userRepository.existsById(userId)).thenReturn(true);
-        when(expenseRepository.findByCreatedById(userId))
-                .thenReturn(Arrays.asList(testExpense));
+        when(expenseRepository.findByCreatedById(userId)).thenReturn(Arrays.asList(testExpense));
 
         // Act
         List<ExpenseResponse> responses = expenseService.getExpensesByUser(userId);
