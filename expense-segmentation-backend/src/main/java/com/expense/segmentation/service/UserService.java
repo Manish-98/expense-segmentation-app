@@ -270,7 +270,7 @@ public class UserService {
 
     private User findUserById(UUID id) {
         return userRepository
-                .findById(id)
+                .findByIdWithDepartmentAndRole(id)
                 .orElseThrow(
                         () -> {
                             log.error("User not found with id: {}", id);
@@ -280,7 +280,7 @@ public class UserService {
 
     private User findUserByEmail(String email) {
         return userRepository
-                .findByEmail(email)
+                .findByEmailWithDepartmentAndRole(email)
                 .orElseThrow(
                         () -> {
                             log.error("User not found with email: {}", email);

@@ -37,7 +37,9 @@ public class Department {
     @ToString.Exclude
     private List<User> users = new ArrayList<>();
 
-    @Version private Long version;
+    @Version
+    @Column(columnDefinition = "bigint default 0", nullable = false)
+    private Long version = 0L;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)

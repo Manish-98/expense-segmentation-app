@@ -21,6 +21,9 @@ spring:
     console:
       enabled: false
 
+  flyway:
+    enabled: false
+
 jwt:
   secret: dGhpc0lzQVNlY3JldEtleUZvckpXVFRva2VuR2VuZXJhdGlvbkFuZFZhbGlkYXRpb24=
   expiration: 3600000

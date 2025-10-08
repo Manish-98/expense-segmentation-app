@@ -35,6 +35,7 @@ dependencies {
 
     // Database
     runtimeOnly("org.postgresql:postgresql")
+    implementation("org.flywaydb:flyway-core")
 
     // Development Tools
     developmentOnly("org.springframework.boot:spring-boot-devtools")
