@@ -5,6 +5,7 @@ import RegisterPage from '../pages/RegisterPage';
 import DashboardPage from '../pages/DashboardPage';
 import UserManagementPage from '../pages/UserManagementPage';
 import DepartmentManagementPage from '../pages/DepartmentManagementPage';
+import ExpenseFormPage from '../pages/ExpenseFormPage';
 
 // Protected Route wrapper
 const ProtectedRoute = ({ children }) => {
@@ -77,6 +78,14 @@ const AppRouter = () => {
           element={
             <ProtectedRoute>
               <DepartmentManagementPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/expenses/new"
+          element={
+            <ProtectedRoute>
+              <ExpenseFormPage />
             </ProtectedRoute>
           }
         />
