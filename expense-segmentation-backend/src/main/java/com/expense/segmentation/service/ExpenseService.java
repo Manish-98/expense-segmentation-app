@@ -2,10 +2,12 @@ package com.expense.segmentation.service;
 
 import com.expense.segmentation.dto.CreateExpenseRequest;
 import com.expense.segmentation.dto.ExpenseResponse;
+import com.expense.segmentation.dto.PagedExpenseResponse;
 import com.expense.segmentation.exception.ResourceNotFoundException;
 import com.expense.segmentation.mapper.ExpenseMapper;
 import com.expense.segmentation.model.Expense;
 import com.expense.segmentation.model.ExpenseStatus;
+import com.expense.segmentation.model.ExpenseType;
 import com.expense.segmentation.model.User;
 import com.expense.segmentation.repository.ExpenseRepository;
 import com.expense.segmentation.repository.UserRepository;
@@ -14,6 +16,9 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -63,6 +68,24 @@ public class ExpenseService {
     public ExpenseResponse getExpenseById(UUID id) {
         log.debug("Fetching expense with id: {}", id);
         Expense expense = findExpenseByIdWithCreatedBy(id);
+
+        // Get current authenticated user
+        User currentUser = getCurrentUser();
+
+        // Authorization check: Users can only view their own expenses
+        // unless they have FINANCE or ADMIN roles
+        String currentUserRole = currentUser.getRole().getName();
+        boolean isFinanceOrAdmin =
+                "FINANCE".equals(currentUserRole) || "ADMIN".equals(currentUserRole);
+
+        if (!isFinanceOrAdmin && !currentUser.getId().equals(expense.getCreatedBy().getId())) {
+            log.warn(
+                    "User {} attempted to access expense {} without permission",
+                    currentUser.getId(),
+                    id);
+            throw new SecurityException("You are not authorized to view this expense");
+        }
+
         return expenseMapper.toResponse(expense);
     }
 
@@ -100,6 +123,65 @@ public class ExpenseService {
                         .toList();
         log.info("Retrieved {} expenses for user: {}", expenses.size(), userId);
         return expenses;
+    }
+
+    @Transactional(readOnly = true)
+    public PagedExpenseResponse getExpensesWithFilters(
+            int page,
+            int size,
+            LocalDate dateFrom,
+            LocalDate dateTo,
+            ExpenseType type,
+            ExpenseStatus status) {
+        log.debug(
+                "Fetching expenses with filters - page: {}, size: {}, dateFrom: {}, dateTo: {},"
+                        + " type: {}, status: {}",
+                page,
+                size,
+                dateFrom,
+                dateTo,
+                type,
+                status);
+
+        // Get current authenticated user
+        User currentUser = getCurrentUser();
+
+        // Determine if user can see all expenses or only their own
+        String currentUserRole = currentUser.getRole().getName();
+        boolean isFinanceOrAdmin =
+                "FINANCE".equals(currentUserRole) || "ADMIN".equals(currentUserRole);
+
+        // For employees, filter by their user ID
+        UUID userIdFilter = isFinanceOrAdmin ? null : currentUser.getId();
+
+        // Create pageable with page number and size
+        Pageable pageable = PageRequest.of(page, size);
+
+        // Fetch expenses with filters
+        Page<Expense> expensePage =
+                expenseRepository.findExpensesWithFilters(
+                        userIdFilter, dateFrom, dateTo, type, status, pageable);
+
+        // Map to response DTOs
+        List<ExpenseResponse> expenseResponses =
+                expensePage.getContent().stream().map(expenseMapper::toResponse).toList();
+
+        log.info(
+                "Retrieved {} expenses (page {} of {}) for user role: {}",
+                expenseResponses.size(),
+                page,
+                expensePage.getTotalPages(),
+                currentUserRole);
+
+        return PagedExpenseResponse.builder()
+                .expenses(expenseResponses)
+                .page(expensePage.getNumber())
+                .size(expensePage.getSize())
+                .totalElements(expensePage.getTotalElements())
+                .totalPages(expensePage.getTotalPages())
+                .first(expensePage.isFirst())
+                .last(expensePage.isLast())
+                .build();
     }
 
     private Expense buildExpense(CreateExpenseRequest request, User currentUser) {

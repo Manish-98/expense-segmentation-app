@@ -2,15 +2,21 @@ package com.expense.segmentation.controller;
 
 import com.expense.segmentation.dto.CreateExpenseRequest;
 import com.expense.segmentation.dto.ExpenseResponse;
+import com.expense.segmentation.dto.PagedExpenseResponse;
+import com.expense.segmentation.model.ExpenseStatus;
+import com.expense.segmentation.model.ExpenseType;
 import com.expense.segmentation.service.ExpenseService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -40,12 +46,56 @@ public class ExpenseController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('EMPLOYEE', 'MANAGER', 'FINANCE', 'ADMIN')")
+    @Operation(
+            summary = "Get expenses with pagination and filters",
+            description =
+                    "Retrieves expenses with pagination and optional filters. Employees see only"
+                            + " their own expenses. Finance and Admin see all expenses.")
+    public ResponseEntity<PagedExpenseResponse> getExpenses(
+            @Parameter(description = "Page number (0-indexed)", example = "0")
+                    @RequestParam(defaultValue = "0")
+                    int page,
+            @Parameter(description = "Page size", example = "10")
+                    @RequestParam(defaultValue = "10")
+                    int size,
+            @Parameter(description = "Filter by date from (inclusive)", example = "2024-01-01")
+                    @RequestParam(required = false)
+                    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+                    LocalDate dateFrom,
+            @Parameter(description = "Filter by date to (inclusive)", example = "2024-12-31")
+                    @RequestParam(required = false)
+                    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+                    LocalDate dateTo,
+            @Parameter(description = "Filter by expense type", example = "EXPENSE")
+                    @RequestParam(required = false)
+                    ExpenseType type,
+            @Parameter(description = "Filter by status", example = "SUBMITTED")
+                    @RequestParam(required = false)
+                    ExpenseStatus status) {
+        log.info(
+                "GET /expenses - page: {}, size: {}, dateFrom: {}, dateTo: {}, type: {}, status:"
+                        + " {}",
+                page,
+                size,
+                dateFrom,
+                dateTo,
+                type,
+                status);
+        return ResponseEntity.ok(
+                expenseService.getExpensesWithFilters(page, size, dateFrom, dateTo, type, status));
+    }
+
+    @GetMapping("/all")
     @PreAuthorize("hasAnyRole('FINANCE', 'ADMIN')")
     @Operation(
-            summary = "Get all expenses",
-            description = "Finance and Admin only - retrieves all expenses and invoices")
+            summary = "Get all expenses (deprecated)",
+            description =
+                    "Finance and Admin only - retrieves all expenses without pagination."
+                            + " Deprecated: use GET /expenses with pagination instead")
+    @Deprecated
     public ResponseEntity<List<ExpenseResponse>> getAllExpenses() {
-        log.info("GET /expenses - Retrieving all expenses");
+        log.info("GET /expenses/all - Retrieving all expenses");
         return ResponseEntity.ok(expenseService.getAllExpenses());
     }
 
