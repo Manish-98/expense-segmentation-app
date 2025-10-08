@@ -36,18 +36,29 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const response = await axiosClient.post('/auth/login', { email, password });
-      const { token: newToken, ...userData } = response.data;
+      const { token: newToken } = response.data;
 
+      // Store token first
       localStorage.setItem('token', newToken);
-      localStorage.setItem('user', JSON.stringify(userData));
-
       setToken(newToken);
+
+      // Fetch complete user data
+      const userResponse = await axiosClient.get('/auth/me');
+      const userData = userResponse.data;
+
+      localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
       setIsAuthenticated(true);
 
       return { success: true };
     } catch (error) {
       console.error('Login failed:', error);
+      // Clean up on error
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setToken(null);
+      setUser(null);
+      setIsAuthenticated(false);
       return {
         success: false,
         message: error.response?.data?.message || 'Login failed. Please try again.',
@@ -58,19 +69,29 @@ export const AuthProvider = ({ children }) => {
   const register = async (name, email, password) => {
     try {
       const response = await axiosClient.post('/auth/register', { name, email, password });
-      const { token: newToken, ...userData } = response.data;
+      const { token: newToken } = response.data;
 
-      // Auto-login after registration
+      // Store token first
       localStorage.setItem('token', newToken);
-      localStorage.setItem('user', JSON.stringify(userData));
-
       setToken(newToken);
+
+      // Fetch complete user data
+      const userResponse = await axiosClient.get('/auth/me');
+      const userData = userResponse.data;
+
+      localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
       setIsAuthenticated(true);
 
       return { success: true };
     } catch (error) {
       console.error('Registration failed:', error);
+      // Clean up on error
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setToken(null);
+      setUser(null);
+      setIsAuthenticated(false);
       return {
         success: false,
         message: error.response?.data?.message || 'Registration failed. Please try again.',
