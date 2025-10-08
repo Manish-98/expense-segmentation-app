@@ -56,8 +56,7 @@ public class ExpenseController {
             @Parameter(description = "Page number (0-indexed)", example = "0")
                     @RequestParam(defaultValue = "0")
                     int page,
-            @Parameter(description = "Page size", example = "10")
-                    @RequestParam(defaultValue = "10")
+            @Parameter(description = "Page size", example = "10") @RequestParam(defaultValue = "10")
                     int size,
             @Parameter(description = "Filter by date from (inclusive)", example = "2024-01-01")
                     @RequestParam(required = false)

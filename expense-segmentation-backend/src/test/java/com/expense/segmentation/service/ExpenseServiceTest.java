@@ -331,7 +331,8 @@ class ExpenseServiceTest {
                 .thenReturn(expensePage);
 
         // Act
-        PagedExpenseResponse response = expenseService.getExpensesWithFilters(0, 10, null, null, null, null);
+        PagedExpenseResponse response =
+                expenseService.getExpensesWithFilters(0, 10, null, null, null, null);
 
         // Assert
         assertThat(response).isNotNull();
@@ -369,7 +370,8 @@ class ExpenseServiceTest {
                 .thenReturn(expensePage);
 
         // Act
-        PagedExpenseResponse response = expenseService.getExpensesWithFilters(0, 10, null, null, null, null);
+        PagedExpenseResponse response =
+                expenseService.getExpensesWithFilters(0, 10, null, null, null, null);
 
         // Assert
         assertThat(response).isNotNull();
@@ -392,7 +394,12 @@ class ExpenseServiceTest {
 
         when(userRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
         when(expenseRepository.findExpensesWithFilters(
-                        any(), any(LocalDate.class), any(LocalDate.class), any(), any(), any(Pageable.class)))
+                        any(),
+                        any(LocalDate.class),
+                        any(LocalDate.class),
+                        any(),
+                        any(),
+                        any(Pageable.class)))
                 .thenReturn(expensePage);
 
         // Act
@@ -403,6 +410,12 @@ class ExpenseServiceTest {
         assertThat(response).isNotNull();
         assertThat(response.getExpenses()).hasSize(1);
         verify(expenseRepository)
-                .findExpensesWithFilters(any(), any(LocalDate.class), any(LocalDate.class), any(), any(), any(Pageable.class));
+                .findExpensesWithFilters(
+                        any(),
+                        any(LocalDate.class),
+                        any(LocalDate.class),
+                        any(),
+                        any(),
+                        any(Pageable.class));
     }
 }

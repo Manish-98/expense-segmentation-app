@@ -46,8 +46,8 @@ public interface ExpenseRepository extends JpaRepository<Expense, UUID> {
     List<Expense> findByCreatedById(@Param("userId") UUID userId);
 
     /**
-     * Fetches expenses with pagination and filtering support. Count query is separate to avoid
-     * JOIN FETCH in count queries.
+     * Fetches expenses with pagination and filtering support. Count query is separate to avoid JOIN
+     * FETCH in count queries.
      *
      * @param userId optional user ID filter (null to get all)
      * @param dateFrom optional start date filter
