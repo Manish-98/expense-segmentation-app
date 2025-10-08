@@ -52,10 +52,28 @@ const DashboardPage = () => {
               <p className="text-gray-600 mt-2">
                 Role: {user?.role || 'User'}
               </p>
+
+              {/* Quick Actions */}
+              {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (
+                <div className="mt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Quick Actions</h3>
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      onClick={() => navigate('/users')}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    >
+                      Manage Users
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-blue-900 font-medium">Phase 1 Complete!</p>
+                <p className="text-blue-900 font-medium">User Management Available!</p>
                 <p className="text-blue-700 text-sm mt-1">
-                  Authentication and user management are now set up. Future features (expenses, approvals, etc.) will be added in upcoming phases.
+                  {user?.role === 'ADMIN' && 'As an Admin, you can view and manage all users in the system.'}
+                  {user?.role === 'MANAGER' && 'As a Manager, you can view users in your department.'}
+                  {user?.role !== 'ADMIN' && user?.role !== 'MANAGER' && 'Authentication and user management are now set up. Future features (expenses, approvals, etc.) will be added in upcoming phases.'}
                 </p>
               </div>
             </div>
