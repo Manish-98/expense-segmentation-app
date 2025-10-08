@@ -274,7 +274,8 @@ class UserServiceTest {
 
         when(userRepository.findById(user1.getId())).thenReturn(Optional.of(user1));
         when(roleService.getRoleByName(RoleType.OWNER))
-                .thenThrow(new ResourceNotFoundException("Role", "name", RoleType.OWNER.toString()));
+                .thenThrow(
+                        new ResourceNotFoundException("Role", "name", RoleType.OWNER.toString()));
 
         // When & Then
         assertThatThrownBy(() -> userService.updateUser(user1.getId(), request))

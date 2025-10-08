@@ -120,7 +120,8 @@ class DepartmentServiceTest {
         CreateDepartmentRequest request =
                 new CreateDepartmentRequest("Engineering", "ENG", invalidManagerId);
         when(departmentRepository.existsByCode("ENG")).thenReturn(false);
-        when(userService.getUserEntityById(invalidManagerId)).thenThrow(new ResourceNotFoundException("User", invalidManagerId.toString()));
+        when(userService.getUserEntityById(invalidManagerId))
+                .thenThrow(new ResourceNotFoundException("User", invalidManagerId.toString()));
 
         // When & Then
         assertThatThrownBy(() -> departmentService.createDepartment(request))
@@ -169,7 +170,8 @@ class DepartmentServiceTest {
     void getDepartmentById_WithNonExistingId_ShouldThrowException() {
         // Given
         UUID nonExistingId = UUID.randomUUID();
-        when(departmentRepository.findByIdWithManager(nonExistingId)).thenThrow(new ResourceNotFoundException("Department", nonExistingId.toString()));
+        when(departmentRepository.findByIdWithManager(nonExistingId))
+                .thenThrow(new ResourceNotFoundException("Department", nonExistingId.toString()));
 
         // When & Then
         assertThatThrownBy(() -> departmentService.getDepartmentById(nonExistingId))
@@ -225,7 +227,8 @@ class DepartmentServiceTest {
         // Given
         UUID nonExistingId = UUID.randomUUID();
         UpdateDepartmentRequest request = new UpdateDepartmentRequest("Updated Name", null);
-        when(departmentRepository.findById(nonExistingId)).thenThrow(new ResourceNotFoundException("Department", nonExistingId.toString()));
+        when(departmentRepository.findById(nonExistingId))
+                .thenThrow(new ResourceNotFoundException("Department", nonExistingId.toString()));
 
         // When & Then
         assertThatThrownBy(() -> departmentService.updateDepartment(nonExistingId, request))
@@ -239,7 +242,8 @@ class DepartmentServiceTest {
         UUID invalidManagerId = UUID.randomUUID();
         UpdateDepartmentRequest request = new UpdateDepartmentRequest(null, invalidManagerId);
         when(departmentRepository.findById(department.getId())).thenReturn(Optional.of(department));
-        when(userService.getUserEntityById(invalidManagerId)).thenThrow(new ResourceNotFoundException("User", invalidManagerId.toString()));
+        when(userService.getUserEntityById(invalidManagerId))
+                .thenThrow(new ResourceNotFoundException("User", invalidManagerId.toString()));
 
         // When & Then
         assertThatThrownBy(() -> departmentService.updateDepartment(department.getId(), request))
