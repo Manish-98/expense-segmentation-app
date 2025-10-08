@@ -237,6 +237,6 @@ class ExpenseControllerTest {
 
         // When & Then
         mockMvc.perform(get("/expenses/user/{userId}", userId))
-                .andExpect(status().isInternalServerError());
+                .andExpect(status().isForbidden());
     }
 }

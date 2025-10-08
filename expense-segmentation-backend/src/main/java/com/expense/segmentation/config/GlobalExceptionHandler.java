@@ -94,6 +94,23 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
     }
 
+    @ExceptionHandler(SecurityException.class)
+    public ResponseEntity<ErrorResponse> handleSecurityException(
+            SecurityException ex, HttpServletRequest request) {
+        log.warn("Security exception for request: {} {}", request.getMethod(), request.getRequestURI());
+
+        ErrorResponse response =
+                ErrorResponse.builder()
+                        .status(HttpStatus.FORBIDDEN.value())
+                        .error("Forbidden")
+                        .message(ex.getMessage())
+                        .path(request.getRequestURI())
+                        .timestamp(LocalDateTime.now())
+                        .build();
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+    }
+
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFoundException(
             ResourceNotFoundException ex, HttpServletRequest request) {
