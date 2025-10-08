@@ -80,6 +80,10 @@ public class UserService {
                                     return new ResourceNotFoundException("User", userId.toString());
                                 });
 
+        // Track current state before changes
+        boolean wasManager = user.getRole().getName() == com.expense.segmentation.model.RoleType.MANAGER;
+        Department oldDepartment = user.getDepartment();
+
         Department targetDepartment = null;
         boolean isBecomingManager = false;
 
@@ -120,12 +124,54 @@ public class UserService {
             targetDepartment = user.getDepartment();
         }
 
-        // If user is becoming a manager, update the department's manager field
-        if (isBecomingManager && targetDepartment != null) {
+        // Handle demotion from MANAGER role
+        if (wasManager && !isBecomingManager && oldDepartment != null) {
+            if (oldDepartment.getManager() != null && oldDepartment.getManager().getId().equals(userId)) {
+                oldDepartment.setManager(null);
+                departmentRepository.save(oldDepartment);
+                log.info("Removed user {} as manager of department {} due to role demotion at {}",
+                    userId, oldDepartment.getId(), java.time.LocalDateTime.now());
+            }
+        }
+
+        // Handle manager changing departments
+        if (wasManager && request.getDepartmentId() != null && oldDepartment != null
+                && !oldDepartment.getId().equals(request.getDepartmentId())) {
+            // Remove manager from old department if user was its manager
+            if (oldDepartment.getManager() != null && oldDepartment.getManager().getId().equals(userId)) {
+                oldDepartment.setManager(null);
+                departmentRepository.save(oldDepartment);
+                log.info("Removed user {} as manager of department {} due to department change at {}",
+                    userId, oldDepartment.getId(), java.time.LocalDateTime.now());
+            }
+        }
+
+        // Handle promotion to MANAGER role
+        if (isBecomingManager) {
+            if (targetDepartment == null) {
+                log.error("Cannot promote user {} to MANAGER role without a department", userId);
+                throw new InvalidOperationException(
+                    "User must be assigned to a department before being promoted to MANAGER role");
+            }
+
+            // Check if department already has a manager
+            if (targetDepartment.getManager() != null
+                    && !targetDepartment.getManager().getId().equals(userId)) {
+                User existingManager = targetDepartment.getManager();
+                log.error("Department {} already has manager {}",
+                    targetDepartment.getId(), existingManager.getId());
+                throw new InvalidOperationException(
+                    "Department '" + targetDepartment.getName() +
+                    "' already has a manager (" + existingManager.getName() +
+                    "). Please demote the current manager first.");
+            }
+
+            // Set user as department manager
             log.debug("Setting user {} as manager of department {}", userId, targetDepartment.getId());
             targetDepartment.setManager(user);
             departmentRepository.save(targetDepartment);
-            log.info("Successfully set user {} as manager of department {}", userId, targetDepartment.getId());
+            log.info("Successfully promoted user {} to manager of department {} at {}",
+                userId, targetDepartment.getId(), java.time.LocalDateTime.now());
         }
 
         User updatedUser = userRepository.save(user);
