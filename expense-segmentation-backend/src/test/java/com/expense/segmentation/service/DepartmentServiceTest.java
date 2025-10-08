@@ -38,6 +38,8 @@ class DepartmentServiceTest {
 
     @Mock private UserRepository userRepository;
 
+    @Mock private com.expense.segmentation.repository.RoleRepository roleRepository;
+
     @InjectMocks private DepartmentService departmentService;
 
     private DepartmentMapper departmentMapper;
@@ -51,7 +53,7 @@ class DepartmentServiceTest {
         // Initialize real mapper
         departmentMapper = new DepartmentMapper();
         departmentService =
-                new DepartmentService(departmentRepository, userRepository, departmentMapper);
+                new DepartmentService(departmentRepository, userRepository, roleRepository, departmentMapper);
 
         managerRole = new Role();
         managerRole.setId(UUID.randomUUID());
@@ -81,6 +83,8 @@ class DepartmentServiceTest {
                 new CreateDepartmentRequest("Engineering", "ENG", manager.getId());
         when(departmentRepository.existsByCode("ENG")).thenReturn(false);
         when(userRepository.findById(manager.getId())).thenReturn(Optional.of(manager));
+        when(roleRepository.findByName(RoleType.MANAGER)).thenReturn(Optional.of(managerRole));
+        when(userRepository.save(any(User.class))).thenReturn(manager);
         when(departmentRepository.save(any(Department.class))).thenReturn(department);
 
         // When
@@ -93,6 +97,7 @@ class DepartmentServiceTest {
         assertThat(response.getManagerId()).isEqualTo(manager.getId());
         assertThat(response.getManagerName()).isEqualTo("Manager User");
         verify(departmentRepository).save(any(Department.class));
+        verify(userRepository).save(any(User.class)); // Verify user is updated
     }
 
     @Test
@@ -195,6 +200,8 @@ class DepartmentServiceTest {
         UpdateDepartmentRequest request = new UpdateDepartmentRequest(null, newManager.getId());
         when(departmentRepository.findById(department.getId())).thenReturn(Optional.of(department));
         when(userRepository.findById(newManager.getId())).thenReturn(Optional.of(newManager));
+        when(roleRepository.findByName(RoleType.MANAGER)).thenReturn(Optional.of(managerRole));
+        when(userRepository.save(any(User.class))).thenReturn(newManager);
         when(departmentRepository.save(any(Department.class))).thenReturn(department);
 
         // When
@@ -204,6 +211,7 @@ class DepartmentServiceTest {
         // Then
         assertThat(response).isNotNull();
         verify(userRepository).findById(newManager.getId());
+        verify(userRepository).save(any(User.class)); // Verify user is updated
         verify(departmentRepository).save(any(Department.class));
     }
 

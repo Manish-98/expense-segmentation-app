@@ -7,8 +7,11 @@ import com.expense.segmentation.exception.DuplicateResourceException;
 import com.expense.segmentation.exception.ResourceNotFoundException;
 import com.expense.segmentation.mapper.DepartmentMapper;
 import com.expense.segmentation.model.Department;
+import com.expense.segmentation.model.Role;
+import com.expense.segmentation.model.RoleType;
 import com.expense.segmentation.model.User;
 import com.expense.segmentation.repository.DepartmentRepository;
+import com.expense.segmentation.repository.RoleRepository;
 import com.expense.segmentation.repository.UserRepository;
 import java.util.List;
 import java.util.UUID;
@@ -25,6 +28,7 @@ public class DepartmentService {
 
     private final DepartmentRepository departmentRepository;
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final DepartmentMapper departmentMapper;
 
     @Transactional
@@ -59,6 +63,9 @@ public class DepartmentService {
                                                 "User", request.getManagerId().toString());
                                     });
             department.setManager(manager);
+
+            // Update manager's role to MANAGER and department
+            updateUserToManager(manager, department);
         }
 
         Department saved = departmentRepository.save(department);
@@ -126,10 +133,39 @@ public class DepartmentService {
                                                 "User", request.getManagerId().toString());
                                     });
             department.setManager(manager);
+
+            // Update manager's role to MANAGER and department
+            updateUserToManager(manager, department);
         }
 
         Department updated = departmentRepository.save(department);
         log.info("Successfully updated department: {}", id);
         return departmentMapper.toResponse(updated);
+    }
+
+    /**
+     * Updates a user to be a manager of the given department.
+     * Sets the user's role to MANAGER and department to the provided department.
+     *
+     * @param user the user to update
+     * @param department the department to assign
+     */
+    private void updateUserToManager(User user, Department department) {
+        log.debug("Updating user {} to be manager of department {}", user.getId(), department.getId());
+
+        // Get MANAGER role
+        Role managerRole = roleRepository.findByName(RoleType.MANAGER)
+                .orElseThrow(() -> {
+                    log.error("MANAGER role not found in database");
+                    return new ResourceNotFoundException("Role", "MANAGER");
+                });
+
+        // Update user's role and department
+        user.setRole(managerRole);
+        user.setDepartment(department);
+        userRepository.save(user);
+
+        log.info("Successfully updated user {} to MANAGER role in department {}",
+                user.getId(), department.getCode());
     }
 }
