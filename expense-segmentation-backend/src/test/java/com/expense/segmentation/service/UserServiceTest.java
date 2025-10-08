@@ -54,7 +54,8 @@ class UserServiceTest {
     void setUp() {
         // Initialize real mapper
         userMapper = new UserMapper();
-        userService = new UserService(userRepository, roleRepository, departmentRepository, userMapper);
+        userService =
+                new UserService(userRepository, roleRepository, departmentRepository, userMapper);
 
         employeeRole = new Role();
         employeeRole.setId(UUID.randomUUID());

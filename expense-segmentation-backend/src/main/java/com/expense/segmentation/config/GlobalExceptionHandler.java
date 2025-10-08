@@ -26,7 +26,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationExceptions(
             MethodArgumentNotValidException ex, HttpServletRequest request) {
-        log.warn("Validation failed for request: {} {}", request.getMethod(), request.getRequestURI());
+        log.warn(
+                "Validation failed for request: {} {}",
+                request.getMethod(),
+                request.getRequestURI());
 
         List<ErrorResponse.ValidationError> validationErrors =
                 ex.getBindingResult().getAllErrors().stream()
@@ -57,7 +60,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({BadCredentialsException.class, UsernameNotFoundException.class})
     public ResponseEntity<ErrorResponse> handleAuthenticationExceptions(
             Exception ex, HttpServletRequest request) {
-        log.warn("Authentication failed for request: {} {}", request.getMethod(), request.getRequestURI());
+        log.warn(
+                "Authentication failed for request: {} {}",
+                request.getMethod(),
+                request.getRequestURI());
 
         ErrorResponse response =
                 ErrorResponse.builder()

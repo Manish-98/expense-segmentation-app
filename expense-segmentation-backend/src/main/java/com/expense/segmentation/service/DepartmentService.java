@@ -43,13 +43,18 @@ public class DepartmentService {
 
         // Set manager if provided
         if (request.getManagerId() != null) {
-            log.debug("Setting manager {} for department {}", request.getManagerId(), request.getCode());
+            log.debug(
+                    "Setting manager {} for department {}",
+                    request.getManagerId(),
+                    request.getCode());
             User manager =
                     userRepository
                             .findById(request.getManagerId())
                             .orElseThrow(
                                     () -> {
-                                        log.error("Manager not found with id: {}", request.getManagerId());
+                                        log.error(
+                                                "Manager not found with id: {}",
+                                                request.getManagerId());
                                         return new ResourceNotFoundException(
                                                 "User", request.getManagerId().toString());
                                     });
@@ -64,9 +69,10 @@ public class DepartmentService {
     @Transactional(readOnly = true)
     public List<DepartmentResponse> getAllDepartments() {
         log.debug("Fetching all departments");
-        List<DepartmentResponse> departments = departmentRepository.findAll().stream()
-                .map(departmentMapper::toResponse)
-                .collect(Collectors.toList());
+        List<DepartmentResponse> departments =
+                departmentRepository.findAll().stream()
+                        .map(departmentMapper::toResponse)
+                        .collect(Collectors.toList());
         log.info("Retrieved {} departments", departments.size());
         return departments;
     }
@@ -80,7 +86,8 @@ public class DepartmentService {
                         .orElseThrow(
                                 () -> {
                                     log.error("Department not found with id: {}", id);
-                                    return new ResourceNotFoundException("Department", id.toString());
+                                    return new ResourceNotFoundException(
+                                            "Department", id.toString());
                                 });
         return departmentMapper.toResponse(department);
     }
@@ -94,7 +101,8 @@ public class DepartmentService {
                         .orElseThrow(
                                 () -> {
                                     log.error("Department not found with id: {}", id);
-                                    return new ResourceNotFoundException("Department", id.toString());
+                                    return new ResourceNotFoundException(
+                                            "Department", id.toString());
                                 });
 
         // Update name if provided
@@ -111,7 +119,9 @@ public class DepartmentService {
                             .findById(request.getManagerId())
                             .orElseThrow(
                                     () -> {
-                                        log.error("Manager not found with id: {}", request.getManagerId());
+                                        log.error(
+                                                "Manager not found with id: {}",
+                                                request.getManagerId());
                                         return new ResourceNotFoundException(
                                                 "User", request.getManagerId().toString());
                                     });

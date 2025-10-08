@@ -1,7 +1,6 @@
 package com.expense.segmentation.dto;
 
 import com.expense.segmentation.model.RoleType;
-import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Data;

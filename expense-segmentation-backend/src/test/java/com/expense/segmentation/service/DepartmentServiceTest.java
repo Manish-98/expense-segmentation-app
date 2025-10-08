@@ -50,7 +50,8 @@ class DepartmentServiceTest {
     void setUp() {
         // Initialize real mapper
         departmentMapper = new DepartmentMapper();
-        departmentService = new DepartmentService(departmentRepository, userRepository, departmentMapper);
+        departmentService =
+                new DepartmentService(departmentRepository, userRepository, departmentMapper);
 
         managerRole = new Role();
         managerRole.setId(UUID.randomUUID());

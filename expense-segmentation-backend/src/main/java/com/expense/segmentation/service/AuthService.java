@@ -100,7 +100,9 @@ public class AuthService {
                         .findByEmail(request.getEmail())
                         .orElseThrow(
                                 () -> {
-                                    log.error("User not found after successful authentication: {}", request.getEmail());
+                                    log.error(
+                                            "User not found after successful authentication: {}",
+                                            request.getEmail());
                                     return new ResourceNotFoundException(
                                             "User", "email", request.getEmail());
                                 });
@@ -120,7 +122,8 @@ public class AuthService {
                         .findByEmail(email)
                         .orElseThrow(
                                 () -> {
-                                    log.error("Authenticated user not found in database: {}", email);
+                                    log.error(
+                                            "Authenticated user not found in database: {}", email);
                                     return new ResourceNotFoundException("User", "email", email);
                                 });
 

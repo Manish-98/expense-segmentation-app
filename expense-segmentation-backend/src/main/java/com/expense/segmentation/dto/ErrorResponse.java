@@ -37,9 +37,7 @@ public class ErrorResponse {
     /** List of validation errors (for validation failures) */
     private List<ValidationError> validationErrors;
 
-    /**
-     * Nested class for field-level validation errors
-     */
+    /** Nested class for field-level validation errors */
     @Data
     @Builder
     @NoArgsConstructor

@@ -70,8 +70,15 @@ class AuthServiceTest {
     void setUp() {
         // Initialize real mapper
         userMapper = new UserMapper();
-        authService = new AuthService(userRepository, roleRepository, passwordEncoder,
-                jwtTokenUtil, authenticationManager, userDetailsService, userMapper);
+        authService =
+                new AuthService(
+                        userRepository,
+                        roleRepository,
+                        passwordEncoder,
+                        jwtTokenUtil,
+                        authenticationManager,
+                        userDetailsService,
+                        userMapper);
 
         registerRequest = new RegisterRequest("John Doe", "john@example.com", "password123");
         loginRequest = new LoginRequest("john@example.com", "password123");

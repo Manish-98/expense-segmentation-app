@@ -22,7 +22,9 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
-        log.info("POST /auth/register - Registration request received for email: {}", request.getEmail());
+        log.info(
+                "POST /auth/register - Registration request received for email: {}",
+                request.getEmail());
         AuthResponse response = authService.register(request);
         log.info("POST /auth/register - User registered successfully: {}", request.getEmail());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);

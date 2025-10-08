@@ -33,9 +33,10 @@ public class UserService {
     @Transactional(readOnly = true)
     public List<UserResponse> getAllUsers() {
         log.debug("Fetching all users");
-        List<UserResponse> users = userRepository.findAll().stream()
-                .map(userMapper::toResponse)
-                .collect(Collectors.toList());
+        List<UserResponse> users =
+                userRepository.findAll().stream()
+                        .map(userMapper::toResponse)
+                        .collect(Collectors.toList());
         log.info("Retrieved {} users", users.size());
         return users;
     }
@@ -55,14 +56,14 @@ public class UserService {
 
         if (manager.getDepartment() == null) {
             log.error("Manager {} is not assigned to any department", managerId);
-            throw new InvalidOperationException(
-                    "Manager is not assigned to any department");
+            throw new InvalidOperationException("Manager is not assigned to any department");
         }
 
         UUID departmentId = manager.getDepartment().getId();
-        List<UserResponse> users = userRepository.findByDepartmentId(departmentId).stream()
-                .map(userMapper::toResponse)
-                .collect(Collectors.toList());
+        List<UserResponse> users =
+                userRepository.findByDepartmentId(departmentId).stream()
+                        .map(userMapper::toResponse)
+                        .collect(Collectors.toList());
         log.info("Retrieved {} users for department: {}", users.size(), departmentId);
         return users;
     }
@@ -102,10 +103,11 @@ public class UserService {
                             .findById(request.getDepartmentId())
                             .orElseThrow(
                                     () -> {
-                                        log.error("Department not found with id: {}", request.getDepartmentId());
+                                        log.error(
+                                                "Department not found with id: {}",
+                                                request.getDepartmentId());
                                         return new ResourceNotFoundException(
-                                                "Department",
-                                                request.getDepartmentId().toString());
+                                                "Department", request.getDepartmentId().toString());
                                     });
             user.setDepartment(department);
         }
