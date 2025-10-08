@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import LoginPage from '../pages/LoginPage';
 import RegisterPage from '../pages/RegisterPage';
 import DashboardPage from '../pages/DashboardPage';
+import UserManagementPage from '../pages/UserManagementPage';
 
 // Protected Route wrapper
 const ProtectedRoute = ({ children }) => {
@@ -59,6 +60,14 @@ const AppRouter = () => {
           element={
             <ProtectedRoute>
               <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/users"
+          element={
+            <ProtectedRoute>
+              <UserManagementPage />
             </ProtectedRoute>
           }
         />
