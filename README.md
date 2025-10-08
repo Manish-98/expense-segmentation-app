@@ -152,6 +152,27 @@ After making changes to the backend:
 docker-compose up -d --build backend
 ```
 
+### Git Hooks Setup
+
+The project includes pre-push hooks to maintain code quality. Install them once after cloning:
+
+```bash
+# Install Git hooks
+./.githooks/install-hooks.sh
+```
+
+**Pre-push hook checks:**
+- ✅ Spotless code formatting (auto-applies and stages changes)
+- ✅ All tests pass
+- ✅ Code coverage meets minimum requirements
+
+**Skip hook if needed** (use sparingly):
+```bash
+git push --no-verify
+```
+
+See `.githooks/README.md` for more details.
+
 ### Viewing Logs
 
 ```bash

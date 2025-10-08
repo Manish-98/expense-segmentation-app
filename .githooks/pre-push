@@ -1,0 +1,68 @@
+#!/bin/bash
+# Pre-push hook for expense-segmentation backend
+# Runs: spotless, tests, and coverage verification
+
+set -e
+
+echo "🔍 Pre-push checks starting..."
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Check if backend files have changed
+BACKEND_CHANGED=$(git diff --name-only @{u}.. 2>/dev/null | grep -c "^expense-segmentation-backend/" || true)
+
+if [ "$BACKEND_CHANGED" -eq 0 ]; then
+    echo -e "${GREEN}✓${NC} No backend changes detected, skipping backend checks"
+    exit 0
+fi
+
+echo -e "${YELLOW}→${NC} Backend changes detected, running checks..."
+
+# Navigate to backend directory
+cd expense-segmentation-backend
+
+# Step 1: Apply Spotless
+echo -e "\n${YELLOW}→${NC} Step 1/3: Applying Spotless formatting..."
+if ./gradlew spotlessApply --no-daemon > /dev/null 2>&1; then
+    echo -e "${GREEN}✓${NC} Spotless formatting applied"
+
+    # Check if spotless made any changes
+    if ! git diff --quiet; then
+        echo -e "${YELLOW}⚠${NC}  Spotless made formatting changes"
+        echo -e "${YELLOW}⚠${NC}  Staging formatted files..."
+        git add -u
+        echo -e "${GREEN}✓${NC} Formatted files staged"
+    fi
+else
+    echo -e "${RED}✗${NC} Spotless formatting failed"
+    exit 1
+fi
+
+# Step 2: Run Tests
+echo -e "\n${YELLOW}→${NC} Step 2/3: Running tests..."
+if ./gradlew test --no-daemon > /dev/null 2>&1; then
+    echo -e "${GREEN}✓${NC} All tests passed"
+else
+    echo -e "${RED}✗${NC} Tests failed"
+    echo -e "${RED}✗${NC} Run './gradlew test' to see details"
+    exit 1
+fi
+
+# Step 3: Verify Coverage
+echo -e "\n${YELLOW}→${NC} Step 3/3: Verifying code coverage..."
+if ./gradlew jacocoTestCoverageVerification --no-daemon > /dev/null 2>&1; then
+    echo -e "${GREEN}✓${NC} Code coverage meets requirements"
+else
+    echo -e "${RED}✗${NC} Code coverage verification failed"
+    echo -e "${RED}✗${NC} Run './gradlew jacocoTestReport' to see coverage report"
+    exit 1
+fi
+
+echo -e "\n${GREEN}✓${NC} All pre-push checks passed!"
+echo -e "${GREEN}✓${NC} Ready to push\n"
+
+exit 0
