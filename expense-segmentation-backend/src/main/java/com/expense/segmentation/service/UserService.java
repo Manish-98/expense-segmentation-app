@@ -81,7 +81,8 @@ public class UserService {
                                 });
 
         // Track current state before changes
-        boolean wasManager = user.getRole().getName() == com.expense.segmentation.model.RoleType.MANAGER;
+        boolean wasManager = user.getRole() != null &&
+            com.expense.segmentation.model.RoleType.MANAGER.equals(user.getRole().getName());
         Department oldDepartment = user.getDepartment();
 
         Department targetDepartment = null;
@@ -100,7 +101,7 @@ public class UserService {
                                                 "Role", "name", request.getRole().toString());
                                     });
             user.setRole(role);
-            isBecomingManager = request.getRole() == com.expense.segmentation.model.RoleType.MANAGER;
+            isBecomingManager = com.expense.segmentation.model.RoleType.MANAGER.equals(request.getRole());
         }
 
         // Update department if provided
@@ -190,6 +191,20 @@ public class UserService {
                                     log.error("User not found with id: {}", userId);
                                     return new ResourceNotFoundException("User", userId.toString());
                                 });
+
+        // If the user is a manager, clear the department's manager field
+        boolean isManager = user.getRole() != null &&
+            com.expense.segmentation.model.RoleType.MANAGER.equals(user.getRole().getName());
+
+        if (isManager && user.getDepartment() != null) {
+            Department department = user.getDepartment();
+            if (department.getManager() != null && department.getManager().getId().equals(userId)) {
+                department.setManager(null);
+                departmentRepository.save(department);
+                log.info("Removed user {} as manager of department {} due to deactivation",
+                    userId, department.getId());
+            }
+        }
 
         user.setStatus(UserStatus.INACTIVE);
         userRepository.save(user);

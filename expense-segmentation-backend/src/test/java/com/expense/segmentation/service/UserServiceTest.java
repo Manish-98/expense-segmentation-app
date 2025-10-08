@@ -628,4 +628,42 @@ class UserServiceTest {
         verify(departmentRepository, never()).save(any());
         verify(userRepository, never()).save(any());
     }
+
+    @Test
+    void deactivateUser_WhenUserIsManager_ShouldClearDepartmentManager() {
+        // Given
+        department.setManager(manager);
+
+        when(userRepository.findById(manager.getId())).thenReturn(Optional.of(manager));
+        when(departmentRepository.save(any(Department.class))).thenReturn(department);
+        when(userRepository.save(any(User.class))).thenReturn(manager);
+
+        // When
+        userService.deactivateUser(manager.getId());
+
+        // Then
+        assertThat(manager.getStatus()).isEqualTo(UserStatus.INACTIVE);
+        assertThat(department.getManager()).isNull();
+
+        verify(userRepository).findById(manager.getId());
+        verify(departmentRepository).save(department);
+        verify(userRepository).save(manager);
+    }
+
+    @Test
+    void deactivateUser_WhenUserIsNotManager_ShouldNotUpdateDepartment() {
+        // Given
+        when(userRepository.findById(user1.getId())).thenReturn(Optional.of(user1));
+        when(userRepository.save(any(User.class))).thenReturn(user1);
+
+        // When
+        userService.deactivateUser(user1.getId());
+
+        // Then
+        assertThat(user1.getStatus()).isEqualTo(UserStatus.INACTIVE);
+
+        verify(userRepository).findById(user1.getId());
+        verify(departmentRepository, never()).save(any());
+        verify(userRepository).save(user1);
+    }
 }
