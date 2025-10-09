@@ -11,6 +11,7 @@ import com.expense.segmentation.config.JwtAuthenticationFilter;
 import com.expense.segmentation.config.JwtTokenUtil;
 import com.expense.segmentation.dto.CreateExpenseRequest;
 import com.expense.segmentation.dto.ExpenseResponse;
+import com.expense.segmentation.dto.PagedExpenseResponse;
 import com.expense.segmentation.model.ExpenseStatus;
 import com.expense.segmentation.model.ExpenseType;
 import com.expense.segmentation.service.CustomUserDetailsService;
@@ -139,13 +140,69 @@ class ExpenseControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "EMPLOYEE")
+    void getExpensesWithFilters_WithDefaultPagination_ShouldReturnPagedExpenses() throws Exception {
+        // Given
+        PagedExpenseResponse pagedResponse = new PagedExpenseResponse();
+        pagedResponse.setExpenses(Arrays.asList(expenseResponse));
+        pagedResponse.setPage(0);
+        pagedResponse.setSize(10);
+        pagedResponse.setTotalElements(1L);
+        pagedResponse.setTotalPages(1);
+
+        when(expenseService.getExpensesWithFilters(0, 10, null, null, null, null))
+                .thenReturn(pagedResponse);
+
+        // When & Then
+        mockMvc.perform(get("/expenses"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.expenses").isArray())
+                .andExpect(jsonPath("$.expenses[0].vendor").value("Test Vendor"))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    @Test
+    @WithMockUser(roles = "FINANCE")
+    void getExpensesWithFilters_WithFilters_ShouldReturnFilteredExpenses() throws Exception {
+        // Given
+        PagedExpenseResponse pagedResponse = new PagedExpenseResponse();
+        pagedResponse.setExpenses(Arrays.asList(expenseResponse));
+        pagedResponse.setPage(0);
+        pagedResponse.setSize(20);
+        pagedResponse.setTotalElements(1L);
+        pagedResponse.setTotalPages(1);
+
+        LocalDate dateFrom = LocalDate.now().minusDays(7);
+        LocalDate dateTo = LocalDate.now();
+
+        when(expenseService.getExpensesWithFilters(
+                        0, 20, dateFrom, dateTo, ExpenseType.EXPENSE, ExpenseStatus.SUBMITTED))
+                .thenReturn(pagedResponse);
+
+        // When & Then
+        mockMvc.perform(
+                        get("/expenses")
+                                .param("page", "0")
+                                .param("size", "20")
+                                .param("dateFrom", dateFrom.toString())
+                                .param("dateTo", dateTo.toString())
+                                .param("type", "EXPENSE")
+                                .param("status", "SUBMITTED"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.expenses").isArray())
+                .andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    @Test
     @WithMockUser(roles = "FINANCE")
     void getAllExpenses_WithFinanceRole_ShouldReturnExpenses() throws Exception {
         // Given
         when(expenseService.getAllExpenses()).thenReturn(Arrays.asList(expenseResponse));
 
         // When & Then
-        mockMvc.perform(get("/expenses"))
+        mockMvc.perform(get("/expenses/all"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$[0].vendor").value("Test Vendor"));
@@ -158,7 +215,7 @@ class ExpenseControllerTest {
         when(expenseService.getAllExpenses()).thenReturn(Arrays.asList(expenseResponse));
 
         // When & Then
-        mockMvc.perform(get("/expenses"))
+        mockMvc.perform(get("/expenses/all"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray());
     }

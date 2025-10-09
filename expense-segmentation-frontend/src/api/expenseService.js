@@ -15,11 +15,28 @@ const expenseService = {
   },
 
   /**
-   * Get all expenses (Finance and Admin only)
+   * Get expenses with pagination and filters
+   * @param {object} params - Query parameters
+   * @param {number} params.page - Page number (0-indexed)
+   * @param {number} params.size - Page size
+   * @param {string} params.dateFrom - Filter by date from (YYYY-MM-DD)
+   * @param {string} params.dateTo - Filter by date to (YYYY-MM-DD)
+   * @param {string} params.type - Filter by expense type (EXPENSE, INVOICE)
+   * @param {string} params.status - Filter by status
+   * @returns {Promise} Paginated expense list with metadata
+   */
+  getExpenses: async (params = {}) => {
+    const response = await axiosClient.get('/expenses', { params });
+    return response.data;
+  },
+
+  /**
+   * Get all expenses (Finance and Admin only) - Deprecated
    * @returns {Promise} List of all expenses
+   * @deprecated Use getExpenses() with pagination instead
    */
   getAllExpenses: async () => {
-    const response = await axiosClient.get('/expenses');
+    const response = await axiosClient.get('/expenses/all');
     return response.data;
   },
 

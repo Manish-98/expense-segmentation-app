@@ -6,6 +6,8 @@ import DashboardPage from '../pages/DashboardPage';
 import UserManagementPage from '../pages/UserManagementPage';
 import DepartmentManagementPage from '../pages/DepartmentManagementPage';
 import ExpenseFormPage from '../pages/ExpenseFormPage';
+import ExpenseListPage from '../pages/ExpenseListPage';
+import ExpenseDetailPage from '../pages/ExpenseDetailPage';
 
 // Protected Route wrapper
 const ProtectedRoute = ({ children }) => {
@@ -82,10 +84,26 @@ const AppRouter = () => {
           }
         />
         <Route
+          path="/expenses"
+          element={
+            <ProtectedRoute>
+              <ExpenseListPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/expenses/new"
           element={
             <ProtectedRoute>
               <ExpenseFormPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/expenses/:id"
+          element={
+            <ProtectedRoute>
+              <ExpenseDetailPage />
             </ProtectedRoute>
           }
         />
