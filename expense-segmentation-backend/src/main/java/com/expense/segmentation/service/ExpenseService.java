@@ -75,9 +75,9 @@ public class ExpenseService {
 
         // Authorization check: Users can only view their own expenses
         // unless they have FINANCE or ADMIN roles
-        String currentUserRole = currentUser.getRole().getName();
+        RoleType currentUserRole = currentUser.getRole().getName();
         boolean isFinanceOrAdmin =
-                "FINANCE".equals(currentUserRole) || "ADMIN".equals(currentUserRole);
+                RoleType.FINANCE.equals(currentUserRole) || RoleType.ADMIN.equals(currentUserRole);
 
         if (!isFinanceOrAdmin && !currentUser.getId().equals(expense.getCreatedBy().getId())) {
             log.warn(
@@ -147,9 +147,9 @@ public class ExpenseService {
         User currentUser = getCurrentUser();
 
         // Determine if user can see all expenses or only their own
-        String currentUserRole = currentUser.getRole().getName();
+        RoleType currentUserRole = currentUser.getRole().getName();
         boolean isFinanceOrAdmin =
-                "FINANCE".equals(currentUserRole) || "ADMIN".equals(currentUserRole);
+                RoleType.FINANCE.equals(currentUserRole) || RoleType.ADMIN.equals(currentUserRole);
 
         // For employees, filter by their user ID
         UUID userIdFilter = isFinanceOrAdmin ? null : currentUser.getId();

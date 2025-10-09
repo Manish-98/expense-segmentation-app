@@ -188,6 +188,7 @@ class ExpenseServiceTest {
     void getExpenseById_WithValidId_ShouldReturnExpense() {
         // Arrange
         UUID expenseId = testExpense.getId();
+        when(userRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
         when(expenseRepository.findByIdWithCreatedBy(expenseId))
                 .thenReturn(Optional.of(testExpense));
 
