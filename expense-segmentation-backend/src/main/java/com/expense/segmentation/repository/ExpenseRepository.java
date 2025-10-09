@@ -60,19 +60,19 @@ public interface ExpenseRepository extends JpaRepository<Expense, UUID> {
     @Query(
             value =
                     "SELECT e FROM Expense e LEFT JOIN FETCH e.createdBy "
-                            + "WHERE (:userId IS NULL OR e.createdBy.id = :userId) "
-                            + "AND (:dateFrom IS NULL OR e.date >= :dateFrom) "
-                            + "AND (:dateTo IS NULL OR e.date <= :dateTo) "
-                            + "AND (:type IS NULL OR e.type = :type) "
-                            + "AND (:status IS NULL OR e.status = :status) "
+                            + "WHERE (CAST(:userId AS string) IS NULL OR e.createdBy.id = :userId) "
+                            + "AND (CAST(:dateFrom AS date) IS NULL OR e.date >= :dateFrom) "
+                            + "AND (CAST(:dateTo AS date) IS NULL OR e.date <= :dateTo) "
+                            + "AND (CAST(:type AS string) IS NULL OR e.type = :type) "
+                            + "AND (CAST(:status AS string) IS NULL OR e.status = :status) "
                             + "ORDER BY e.date DESC, e.createdAt DESC",
             countQuery =
                     "SELECT COUNT(e) FROM Expense e "
-                            + "WHERE (:userId IS NULL OR e.createdBy.id = :userId) "
-                            + "AND (:dateFrom IS NULL OR e.date >= :dateFrom) "
-                            + "AND (:dateTo IS NULL OR e.date <= :dateTo) "
-                            + "AND (:type IS NULL OR e.type = :type) "
-                            + "AND (:status IS NULL OR e.status = :status)")
+                            + "WHERE (CAST(:userId AS string) IS NULL OR e.createdBy.id = :userId) "
+                            + "AND (CAST(:dateFrom AS date) IS NULL OR e.date >= :dateFrom) "
+                            + "AND (CAST(:dateTo AS date) IS NULL OR e.date <= :dateTo) "
+                            + "AND (CAST(:type AS string) IS NULL OR e.type = :type) "
+                            + "AND (CAST(:status AS string) IS NULL OR e.status = :status)")
     Page<Expense> findExpensesWithFilters(
             @Param("userId") UUID userId,
             @Param("dateFrom") LocalDate dateFrom,

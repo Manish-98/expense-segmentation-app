@@ -258,12 +258,14 @@ const ExpenseDetailPage = () => {
             <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
               <div className="flex justify-between items-center mb-4">
                 <h4 className="text-sm font-medium text-gray-900">Attachments</h4>
-                <Button
-                  size="sm"
-                  onClick={() => setShowUploadModal(true)}
-                >
-                  Upload Attachment
-                </Button>
+                {(user.id === expense.createdById || ['FINANCE', 'ADMIN'].includes(user.role)) && (
+                  <Button
+                    size="sm"
+                    onClick={() => setShowUploadModal(true)}
+                  >
+                    Upload Attachment
+                  </Button>
+                )}
               </div>
 
               {loadingAttachments ? (
@@ -341,15 +343,15 @@ const ExpenseDetailPage = () => {
       </PageContainer>
 
       {/* Upload Modal */}
-      {showUploadModal && (
-        <Modal
-          title="Upload Attachment"
-          onClose={() => {
-            setShowUploadModal(false);
-            setSelectedFile(null);
-            setUploadError(null);
-          }}
-        >
+      <Modal
+        isOpen={showUploadModal}
+        title="Upload Attachment"
+        onClose={() => {
+          setShowUploadModal(false);
+          setSelectedFile(null);
+          setUploadError(null);
+        }}
+      >
           <div className="space-y-4">
             {uploadError && (
               <Alert
@@ -361,7 +363,7 @@ const ExpenseDetailPage = () => {
 
             <FileUpload
               onFileSelect={handleFileSelect}
-              maxSize={10}
+              maxSize={10485760}
               accept=".pdf,.jpg,.jpeg,.png"
             />
 
@@ -392,8 +394,7 @@ const ExpenseDetailPage = () => {
               </Button>
             </div>
           </div>
-        </Modal>
-      )}
+      </Modal>
     </PageLayout>
   );
 };

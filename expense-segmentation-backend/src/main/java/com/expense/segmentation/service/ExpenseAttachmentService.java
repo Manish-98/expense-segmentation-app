@@ -52,8 +52,19 @@ public class ExpenseAttachmentService {
         // Get current user
         User currentUser = getCurrentUser();
 
-        // Get expense and check authorization
-        Expense expense = getExpenseWithAuthorization(expenseId, currentUser);
+        // Get expense
+        Expense expense =
+                expenseRepository
+                        .findByIdWithCreatedBy(expenseId)
+                        .orElseThrow(
+                                () -> {
+                                    log.error("Expense not found: {}", expenseId);
+                                    return new ResourceNotFoundException(
+                                            "Expense", expenseId.toString());
+                                });
+
+        // Check upload authorization - only creator or finance/admin can upload
+        checkUploadAuthorization(expense, currentUser);
 
         // Store file
         String storedPath = fileStorageService.storeFile(file, expenseId.toString());
@@ -239,6 +250,22 @@ public class ExpenseAttachmentService {
                     expense.getId());
             throw new SecurityException(
                     "You are not authorized to access attachments for this expense");
+        }
+    }
+
+    private void checkUploadAuthorization(Expense expense, User currentUser) {
+        RoleType currentUserRole = currentUser.getRole().getName();
+        boolean isFinanceOrAdmin =
+                RoleType.FINANCE.equals(currentUserRole) || RoleType.ADMIN.equals(currentUserRole);
+
+        if (!isFinanceOrAdmin && !currentUser.getId().equals(expense.getCreatedBy().getId())) {
+            log.warn(
+                    "User {} attempted to upload attachment to expense {} without permission",
+                    currentUser.getId(),
+                    expense.getId());
+            throw new SecurityException(
+                    "You are not authorized to upload attachments for this expense. Only the"
+                            + " expense creator can add attachments.");
         }
     }
 }
