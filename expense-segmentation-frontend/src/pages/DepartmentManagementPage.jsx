@@ -1,15 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import departmentService from '../api/departmentService';
+import Navbar from '../components/Navigation/Navbar';
+import PageLayout from '../components/Layout/PageLayout';
+import PageContainer from '../components/Layout/PageContainer';
+import Card from '../components/Layout/Card';
+import LoadingSpinner from '../components/Feedback/LoadingSpinner';
+import Alert from '../components/Feedback/Alert';
+import EmptyState from '../components/Feedback/EmptyState';
 import Modal from '../components/Modal';
 import Select from '../components/Select';
 import Input from '../components/Input';
 import Button from '../components/Button';
 
 const DepartmentManagementPage = () => {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
   const [departments, setDepartments] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -63,11 +68,6 @@ const DepartmentManagementPage = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
   };
 
   // Create Department Handlers
@@ -197,174 +197,139 @@ const DepartmentManagementPage = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
+    return <LoadingSpinner fullScreen />;
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            <div className="flex-shrink-0">
-              <h1 className="text-xl font-bold text-gray-900">
-                Expense Segmentation App
-              </h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="text-gray-700 hover:text-gray-900 font-medium"
-              >
-                Dashboard
-              </button>
-              <button
-                onClick={() => navigate('/expenses')}
-                className="text-gray-700 hover:text-gray-900 font-medium"
-              >
-                Expenses
-              </button>
-              {(isAdmin || user?.role === 'MANAGER') && (
-                <button
-                  onClick={() => navigate('/users')}
-                  className="text-gray-700 hover:text-gray-900 font-medium"
-                >
-                  Users
-                </button>
-              )}
-              <span className="text-gray-700">
-                Welcome, {user?.name || 'User'}
-              </span>
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Logout
-              </button>
-            </div>
+    <PageLayout>
+      <Navbar />
+
+      <PageContainer>
+        {/* Header */}
+        <div className="mb-6 flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Department Management
+            </h2>
+            <p className="text-gray-600 mt-1">
+              {isAdmin ? 'Create, view, and manage departments' : 'View all departments'}
+            </p>
           </div>
+          {isAdmin && (
+            <Button onClick={openCreateModal}>
+              Create Department
+            </Button>
+          )}
         </div>
-      </nav>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          {/* Header */}
-          <div className="mb-6 flex justify-between items-center">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">
-                Department Management
-              </h2>
-              <p className="text-gray-600 mt-1">
-                {isAdmin ? 'Create, view, and manage departments' : 'View all departments'}
-              </p>
-            </div>
-            {isAdmin && (
-              <Button onClick={openCreateModal}>
-                Create Department
-              </Button>
-            )}
+        {/* Success/Error Messages */}
+        {successMessage && (
+          <div className="mb-4">
+            <Alert
+              type="success"
+              message={successMessage}
+              onClose={() => setSuccessMessage(null)}
+            />
           </div>
+        )}
+        {error && (
+          <div className="mb-4">
+            <Alert
+              type="error"
+              message={error}
+              onClose={() => setError(null)}
+            />
+          </div>
+        )}
 
-          {/* Success/Error Messages */}
-          {successMessage && (
-            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-green-800">{successMessage}</p>
-            </div>
-          )}
-          {error && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-800">{error}</p>
-            </div>
-          )}
-
-          {/* Departments Table */}
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
+        {/* Departments Table */}
+        <Card>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Code
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Manager
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Created At
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Updated At
+                  </th>
+                  {isAdmin && (
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
+                      Actions
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Code
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Manager
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Created At
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Updated At
-                    </th>
-                    {isAdmin && (
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    )}
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {departments.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={isAdmin ? 6 : 5}
-                        className="px-6 py-4 text-center text-gray-500"
-                      >
-                        No departments found
-                      </td>
-                    </tr>
-                  ) : (
-                    departments.map((dept) => (
-                      <tr key={dept.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {dept.name}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{dept.code}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
-                            {dept.managerName || 'N/A'}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500">
-                            {formatDate(dept.createdAt)}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500">
-                            {formatDate(dept.updatedAt)}
-                          </div>
-                        </td>
-                        {isAdmin && (
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            <button
-                              onClick={() => openEditModal(dept)}
-                              className="text-blue-600 hover:text-blue-800 font-medium"
-                            >
-                              Edit
-                            </button>
-                          </td>
-                        )}
-                      </tr>
-                    ))
                   )}
-                </tbody>
-              </table>
-            </div>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {departments.length === 0 ? (
+                  <tr>
+                    <td colSpan={isAdmin ? 6 : 5}>
+                      <EmptyState
+                        icon="📁"
+                        title="No departments found"
+                        description={isAdmin ? "Get started by creating your first department" : "No departments available to display"}
+                        action={isAdmin ? (
+                          <Button onClick={openCreateModal}>
+                            Create First Department
+                          </Button>
+                        ) : null}
+                      />
+                    </td>
+                  </tr>
+                ) : (
+                  departments.map((dept) => (
+                    <tr key={dept.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {dept.name}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{dept.code}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {dept.managerName || 'N/A'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">
+                          {formatDate(dept.createdAt)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">
+                          {formatDate(dept.updatedAt)}
+                        </div>
+                      </td>
+                      {isAdmin && (
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <button
+                            onClick={() => openEditModal(dept)}
+                            className="text-blue-600 hover:text-blue-800 font-medium"
+                          >
+                            Edit
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
-        </div>
-      </main>
+        </Card>
+      </PageContainer>
 
       {/* Create Department Modal */}
       <Modal
@@ -374,8 +339,8 @@ const DepartmentManagementPage = () => {
       >
         <form onSubmit={handleCreateSubmit}>
           {createError && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-800 text-sm">{createError}</p>
+            <div className="mb-4">
+              <Alert type="error" message={createError} />
             </div>
           )}
 
@@ -444,8 +409,8 @@ const DepartmentManagementPage = () => {
       >
         <form onSubmit={handleEditSubmit}>
           {editError && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-800 text-sm">{editError}</p>
+            <div className="mb-4">
+              <Alert type="error" message={editError} />
             </div>
           )}
 
@@ -492,7 +457,7 @@ const DepartmentManagementPage = () => {
           </div>
         </form>
       </Modal>
-    </div>
+    </PageLayout>
   );
 };
 

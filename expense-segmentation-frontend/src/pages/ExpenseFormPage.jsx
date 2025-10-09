@@ -2,12 +2,17 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import expenseService from '../api/expenseService';
+import PageLayout from '../components/Layout/PageLayout';
+import PageContainer from '../components/Layout/PageContainer';
+import Card from '../components/Layout/Card';
+import Navbar from '../components/Navigation/Navbar';
+import Alert from '../components/Feedback/Alert';
 import Input from '../components/Input';
 import Select from '../components/Select';
 import Button from '../components/Button';
 
 const ExpenseFormPage = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -26,11 +31,6 @@ const ExpenseFormPage = () => {
     description: '',
     type: 'EXPENSE',
   });
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -105,86 +105,34 @@ const ExpenseFormPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            <div className="flex-shrink-0">
-              <h1 className="text-xl font-bold text-gray-900">
-                Expense Segmentation App
-              </h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="text-gray-700 hover:text-gray-900 font-medium"
-              >
-                Dashboard
-              </button>
-              <button
-                onClick={() => navigate('/expenses')}
-                className="text-gray-700 hover:text-gray-900 font-medium"
-              >
-                Expenses
-              </button>
-              {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (
-                <button
-                  onClick={() => navigate('/users')}
-                  className="text-gray-700 hover:text-gray-900 font-medium"
-                >
-                  Users
-                </button>
-              )}
-              {(user?.role === 'ADMIN' || user?.role === 'FINANCE') && (
-                <button
-                  onClick={() => navigate('/departments')}
-                  className="text-gray-700 hover:text-gray-900 font-medium"
-                >
-                  Departments
-                </button>
-              )}
-              <span className="text-gray-700">
-                Welcome, {user?.name || 'User'}
-              </span>
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
+    <PageLayout>
+      <Navbar />
+      <PageContainer className="max-w-3xl">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">
+            Submit Expense or Invoice
+          </h2>
+          <p className="text-gray-600 mt-1">
+            Enter the details of your expense or invoice for processing
+          </p>
         </div>
-      </nav>
 
-      {/* Main Content */}
-      <main className="max-w-3xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          {/* Header */}
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">
-              Submit Expense or Invoice
-            </h2>
-            <p className="text-gray-600 mt-1">
-              Enter the details of your expense or invoice for processing
-            </p>
-          </div>
+        {successMessage && (
+          <Alert
+            type="success"
+            message={successMessage}
+            onClose={() => setSuccessMessage(null)}
+          />
+        )}
+        {error && (
+          <Alert
+            type="error"
+            message={error}
+            onClose={() => setError(null)}
+          />
+        )}
 
-          {/* Success/Error Messages */}
-          {successMessage && (
-            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-green-800">{successMessage}</p>
-            </div>
-          )}
-          {error && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-800">{error}</p>
-            </div>
-          )}
-
-          {/* Form */}
-          <div className="bg-white rounded-lg shadow p-6">
+        <Card>
             <form onSubmit={handleSubmit}>
               <Select
                 label="Type"
@@ -267,10 +215,9 @@ const ExpenseFormPage = () => {
                 </Button>
               </div>
             </form>
-          </div>
-        </div>
-      </main>
-    </div>
+        </Card>
+      </PageContainer>
+    </PageLayout>
   );
 };
 

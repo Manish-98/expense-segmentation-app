@@ -1,14 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import userService from '../api/userService';
+import Navbar from '../components/Navigation/Navbar';
+import PageLayout from '../components/Layout/PageLayout';
+import PageContainer from '../components/Layout/PageContainer';
+import Card from '../components/Layout/Card';
+import LoadingSpinner from '../components/Feedback/LoadingSpinner';
+import Alert from '../components/Feedback/Alert';
+import EmptyState from '../components/Feedback/EmptyState';
+import Badge from '../components/Feedback/Badge';
 import Modal from '../components/Modal';
 import Select from '../components/Select';
 import Button from '../components/Button';
+import { useRoleBadges } from '../hooks/useRoleBadges';
 
 const UserManagementPage = () => {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { getRoleVariant } = useRoleBadges();
   const [users, setUsers] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [roles, setRoles] = useState([]);
@@ -66,11 +74,6 @@ const UserManagementPage = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
   };
 
   const openEditModal = (userToEdit) => {
@@ -154,195 +157,140 @@ const UserManagementPage = () => {
     }
   };
 
-  const getStatusBadgeClass = (status) => {
-    return status === 'ACTIVE'
-      ? 'px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800'
-      : 'px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800';
-  };
-
-  const getRoleBadgeClass = (role) => {
-    const colorMap = {
-      ADMIN: 'bg-purple-100 text-purple-800',
-      MANAGER: 'bg-blue-100 text-blue-800',
-      FINANCE: 'bg-yellow-100 text-yellow-800',
-      EMPLOYEE: 'bg-gray-100 text-gray-800',
-      OWNER: 'bg-red-100 text-red-800',
-    };
-    return `px-2 py-1 text-xs font-semibold rounded-full ${colorMap[role] || 'bg-gray-100 text-gray-800'}`;
+  const getStatusVariant = (status) => {
+    return status === 'ACTIVE' ? 'success' : 'danger';
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-      </div>
+      <PageLayout>
+        <LoadingSpinner size="lg" centered />
+      </PageLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            <div className="flex-shrink-0">
-              <h1 className="text-xl font-bold text-gray-900">
-                Expense Segmentation App
-              </h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="text-gray-700 hover:text-gray-900 font-medium"
-              >
-                Dashboard
-              </button>
-              <button
-                onClick={() => navigate('/expenses')}
-                className="text-gray-700 hover:text-gray-900 font-medium"
-              >
-                Expenses
-              </button>
-              {(isAdmin || user?.role === 'FINANCE') && (
-                <button
-                  onClick={() => navigate('/departments')}
-                  className="text-gray-700 hover:text-gray-900 font-medium"
-                >
-                  Departments
-                </button>
-              )}
-              <span className="text-gray-700">
-                Welcome, {user?.name || 'User'}
-              </span>
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
+    <PageLayout>
+      <Navbar />
+
+      <PageContainer>
+        {/* Header */}
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">
+            User Management
+          </h2>
+          <p className="text-gray-600 mt-1">
+            {isAdmin ? 'View and manage all users' : 'View users in your department'}
+          </p>
         </div>
-      </nav>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          {/* Header */}
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">
-              User Management
-            </h2>
-            <p className="text-gray-600 mt-1">
-              {isAdmin ? 'View and manage all users' : 'View users in your department'}
-            </p>
-          </div>
+        {/* Success/Error Messages */}
+        {successMessage && (
+          <Alert variant="success" className="mb-4" onClose={() => setSuccessMessage(null)}>
+            {successMessage}
+          </Alert>
+        )}
+        {error && (
+          <Alert variant="danger" className="mb-4" onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
 
-          {/* Success/Error Messages */}
-          {successMessage && (
-            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-green-800">{successMessage}</p>
-            </div>
-          )}
-          {error && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-800">{error}</p>
-            </div>
-          )}
-
-          {/* Users Table */}
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
+        {/* Users Table */}
+        <Card>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Role
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Department
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  {isAdmin && (
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
+                      Actions
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Email
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Role
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Department
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    {isAdmin && (
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    )}
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {users.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={isAdmin ? 6 : 5}
-                        className="px-6 py-4 text-center text-gray-500"
-                      >
-                        No users found
-                      </td>
-                    </tr>
-                  ) : (
-                    users.map((u) => (
-                      <tr key={u.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {u.name}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500">{u.email}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={getRoleBadgeClass(u.role)}>
-                            {u.role}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
-                            {u.departmentName || 'N/A'}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={getStatusBadgeClass(u.status)}>
-                            {u.status}
-                          </span>
-                        </td>
-                        {isAdmin && (
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={() => openEditModal(u)}
-                                disabled={u.status === 'INACTIVE'}
-                                className="text-blue-600 hover:text-blue-800 font-medium disabled:text-gray-400 disabled:cursor-not-allowed"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => handleDeactivate(u.id, u.name)}
-                                disabled={u.status === 'INACTIVE'}
-                                className="text-red-600 hover:text-red-800 font-medium disabled:text-gray-400 disabled:cursor-not-allowed"
-                              >
-                                Deactivate
-                              </button>
-                            </div>
-                          </td>
-                        )}
-                      </tr>
-                    ))
                   )}
-                </tbody>
-              </table>
-            </div>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {users.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={isAdmin ? 6 : 5}
+                      className="px-6 py-4"
+                    >
+                      <EmptyState
+                        title="No users found"
+                        message="There are no users to display."
+                      />
+                    </td>
+                  </tr>
+                ) : (
+                  users.map((u) => (
+                    <tr key={u.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {u.name}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">{u.email}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Badge variant={getRoleVariant(u.role)}>
+                          {u.role}
+                        </Badge>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {u.departmentName || 'N/A'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Badge variant={getStatusVariant(u.status)}>
+                          {u.status}
+                        </Badge>
+                      </td>
+                      {isAdmin && (
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => openEditModal(u)}
+                              disabled={u.status === 'INACTIVE'}
+                              className="text-blue-600 hover:text-blue-800 font-medium disabled:text-gray-400 disabled:cursor-not-allowed"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeactivate(u.id, u.name)}
+                              disabled={u.status === 'INACTIVE'}
+                              className="text-red-600 hover:text-red-800 font-medium disabled:text-gray-400 disabled:cursor-not-allowed"
+                            >
+                              Deactivate
+                            </button>
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
-        </div>
-      </main>
+        </Card>
+      </PageContainer>
 
       {/* Edit User Modal */}
       <Modal
@@ -352,9 +300,9 @@ const UserManagementPage = () => {
       >
         <form onSubmit={handleEditSubmit}>
           {editError && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-800 text-sm">{editError}</p>
-            </div>
+            <Alert variant="danger" className="mb-4">
+              {editError}
+            </Alert>
           )}
 
           <Select
@@ -396,7 +344,7 @@ const UserManagementPage = () => {
           </div>
         </form>
       </Modal>
-    </div>
+    </PageLayout>
   );
 };
 
