@@ -242,4 +242,96 @@ class LocalFileStorageServiceTest {
         assertThat(fileStorageService.fileExists(storedPath1)).isTrue();
         assertThat(fileStorageService.fileExists(storedPath2)).isTrue();
     }
+
+    @Test
+    void storeFile_WithFileWithoutExtension_ShouldStoreSuccessfully() throws IOException {
+        // Arrange
+        String expenseId = "test-expense";
+        MockMultipartFile file =
+                new MockMultipartFile("file", "README", "text/plain", "readme content".getBytes());
+
+        // Act
+        String storedPath = fileStorageService.storeFile(file, expenseId);
+
+        // Assert
+        assertThat(storedPath).isNotNull();
+        assertThat(storedPath).startsWith(expenseId + "/");
+        assertThat(storedPath).contains("README");
+        assertThat(fileStorageService.fileExists(storedPath)).isTrue();
+    }
+
+    @Test
+    void loadFileAsResource_WithUnreadableFile_ShouldThrowException() throws IOException {
+        // Arrange
+        String expenseId = "test-expense";
+        MockMultipartFile file =
+                new MockMultipartFile("file", "test.pdf", "application/pdf", "content".getBytes());
+        String storedPath = fileStorageService.storeFile(file, expenseId);
+
+        // Make file unreadable
+        Path filePath = testUploadDir.resolve(storedPath);
+        filePath.toFile().setReadable(false);
+
+        try {
+            // Act & Assert
+            assertThatThrownBy(() -> fileStorageService.loadFileAsResource(storedPath))
+                    .isInstanceOf(InvalidOperationException.class)
+                    .hasMessageContaining("File not found");
+        } finally {
+            // Restore permissions for cleanup
+            filePath.toFile().setReadable(true);
+        }
+    }
+
+    @Test
+    void storeFile_WithEmptyFilename_ShouldUseDefault() throws IOException {
+        // Arrange
+        String expenseId = "test-expense";
+        MockMultipartFile file =
+                new MockMultipartFile("file", "", "application/pdf", "content".getBytes());
+
+        // Act
+        String storedPath = fileStorageService.storeFile(file, expenseId);
+
+        // Assert
+        assertThat(storedPath).isNotNull();
+        assertThat(storedPath).startsWith(expenseId + "/");
+    }
+
+    @Test
+    void getAbsolutePath_WithRelativePath_ShouldReturnAbsolutePath() {
+        // Arrange
+        String relativePath = "expense-123/test.pdf";
+
+        // Act
+        Path absolutePath = fileStorageService.getAbsolutePath(relativePath);
+
+        // Assert
+        assertThat(absolutePath).isNotNull();
+        assertThat(absolutePath.isAbsolute()).isTrue();
+        assertThat(absolutePath.toString()).contains("expense-123");
+        assertThat(absolutePath.toString()).contains("test.pdf");
+    }
+
+    @Test
+    void storeFile_WithDifferentFileTypes_ShouldStoreCorrectly() throws IOException {
+        // Arrange
+        String expenseId = "test-expense";
+
+        // Test with image
+        MockMultipartFile imageFile =
+                new MockMultipartFile("file", "image.jpg", "image/jpeg", "image".getBytes());
+        String imagePath = fileStorageService.storeFile(imageFile, expenseId);
+
+        // Test with document
+        MockMultipartFile docFile =
+                new MockMultipartFile("file", "doc.pdf", "application/pdf", "doc".getBytes());
+        String docPath = fileStorageService.storeFile(docFile, expenseId);
+
+        // Assert
+        assertThat(imagePath).endsWith(".jpg");
+        assertThat(docPath).endsWith(".pdf");
+        assertThat(fileStorageService.fileExists(imagePath)).isTrue();
+        assertThat(fileStorageService.fileExists(docPath)).isTrue();
+    }
 }
