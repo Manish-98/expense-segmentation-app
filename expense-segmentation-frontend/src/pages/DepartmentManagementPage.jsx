@@ -222,6 +222,12 @@ const DepartmentManagementPage = () => {
               >
                 Dashboard
               </button>
+              <button
+                onClick={() => navigate('/expenses')}
+                className="text-gray-700 hover:text-gray-900 font-medium"
+              >
+                Expenses
+              </button>
               {(isAdmin || user?.role === 'MANAGER') && (
                 <button
                   onClick={() => navigate('/users')}

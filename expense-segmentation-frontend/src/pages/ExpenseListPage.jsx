@@ -140,20 +140,20 @@ const ExpenseListPage = () => {
               >
                 Expenses
               </button>
-              {(user?.role === 'ADMIN' || user?.role === 'FINANCE') && (
-                <button
-                  onClick={() => navigate('/departments')}
-                  className="text-gray-700 hover:text-gray-900 font-medium"
-                >
-                  Departments
-                </button>
-              )}
               {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (
                 <button
                   onClick={() => navigate('/users')}
                   className="text-gray-700 hover:text-gray-900 font-medium"
                 >
                   Users
+                </button>
+              )}
+              {(user?.role === 'ADMIN' || user?.role === 'FINANCE') && (
+                <button
+                  onClick={() => navigate('/departments')}
+                  className="text-gray-700 hover:text-gray-900 font-medium"
+                >
+                  Departments
                 </button>
               )}
               <span className="text-gray-700">

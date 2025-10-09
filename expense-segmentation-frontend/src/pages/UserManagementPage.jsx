@@ -197,6 +197,12 @@ const UserManagementPage = () => {
               >
                 Dashboard
               </button>
+              <button
+                onClick={() => navigate('/expenses')}
+                className="text-gray-700 hover:text-gray-900 font-medium"
+              >
+                Expenses
+              </button>
               {(isAdmin || user?.role === 'FINANCE') && (
                 <button
                   onClick={() => navigate('/departments')}
