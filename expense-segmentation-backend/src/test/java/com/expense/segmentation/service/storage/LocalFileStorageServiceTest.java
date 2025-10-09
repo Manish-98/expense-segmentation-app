@@ -334,4 +334,127 @@ class LocalFileStorageServiceTest {
         assertThat(fileStorageService.fileExists(imagePath)).isTrue();
         assertThat(fileStorageService.fileExists(docPath)).isTrue();
     }
+
+    @Test
+    void deleteFile_WithIOException_ShouldThrowException() throws IOException {
+        // Arrange
+        String expenseId = "test-expense";
+        MockMultipartFile file =
+                new MockMultipartFile("file", "test.pdf", "application/pdf", "content".getBytes());
+        String storedPath = fileStorageService.storeFile(file, expenseId);
+
+        // Make directory read-only to trigger IOException on delete
+        Path expenseDir = testUploadDir.resolve(expenseId);
+        expenseDir.toFile().setWritable(false);
+
+        try {
+            // Act & Assert
+            assertThatThrownBy(() -> fileStorageService.deleteFile(storedPath))
+                    .isInstanceOf(InvalidOperationException.class)
+                    .hasMessageContaining("Could not delete file");
+        } finally {
+            // Restore permissions for cleanup
+            expenseDir.toFile().setWritable(true);
+        }
+    }
+
+    @Test
+    void storeFile_WithIOExceptionDuringCopy_ShouldThrowException() throws IOException {
+        // Arrange - create a file that will cause issues
+        String expenseId = "test-expense";
+
+        // Create the expense directory and make it read-only
+        Path expenseDir = testUploadDir.resolve(expenseId);
+        Files.createDirectories(expenseDir);
+        expenseDir.toFile().setWritable(false);
+
+        MockMultipartFile file =
+                new MockMultipartFile("file", "test.pdf", "application/pdf", "content".getBytes());
+
+        try {
+            // Act & Assert
+            assertThatThrownBy(() -> fileStorageService.storeFile(file, expenseId))
+                    .isInstanceOf(InvalidOperationException.class)
+                    .hasMessageContaining("Could not store file");
+        } finally {
+            // Restore permissions for cleanup
+            expenseDir.toFile().setWritable(true);
+        }
+    }
+
+    @Test
+    void fileExists_WithExceptionDuringCheck_ShouldReturnFalse() {
+        // Arrange - use a path with special characters that might cause issues
+        String problematicPath = "test/\u0000/file.pdf";
+
+        // Act
+        boolean exists = fileStorageService.fileExists(problematicPath);
+
+        // Assert
+        assertThat(exists).isFalse();
+    }
+
+    @Test
+    void loadFileAsResource_WithMalformedPath_ShouldThrowException() {
+        // Arrange - create a path that would work but then delete the directory
+        String storedPath = "test-expense/nonexistent.pdf";
+
+        // Act & Assert
+        assertThatThrownBy(() -> fileStorageService.loadFileAsResource(storedPath))
+                .isInstanceOf(InvalidOperationException.class)
+                .hasMessageContaining("File not found");
+    }
+
+    @Test
+    void storeFile_WithFilenameDotOnly_ShouldHandleCorrectly() throws IOException {
+        // Arrange
+        String expenseId = "test-expense";
+        MockMultipartFile file =
+                new MockMultipartFile("file", ".", "application/pdf", "content".getBytes());
+
+        // Act
+        String storedPath = fileStorageService.storeFile(file, expenseId);
+
+        // Assert
+        assertThat(storedPath).isNotNull();
+        assertThat(storedPath).startsWith(expenseId + "/");
+        assertThat(fileStorageService.fileExists(storedPath)).isTrue();
+    }
+
+    @Test
+    void storeFile_WithFileExtensionAtStart_ShouldHandleCorrectly() throws IOException {
+        // Arrange
+        String expenseId = "test-expense";
+        MockMultipartFile file =
+                new MockMultipartFile("file", ".hidden", "text/plain", "content".getBytes());
+
+        // Act
+        String storedPath = fileStorageService.storeFile(file, expenseId);
+
+        // Assert
+        assertThat(storedPath).isNotNull();
+        assertThat(storedPath).startsWith(expenseId + "/");
+        assertThat(fileStorageService.fileExists(storedPath)).isTrue();
+    }
+
+    @Test
+    void storeFile_ReplacesExistingFile_ShouldSucceed() throws IOException {
+        // Arrange
+        String expenseId = "test-expense";
+        MockMultipartFile file1 =
+                new MockMultipartFile("file", "test.pdf", "application/pdf", "content1".getBytes());
+        MockMultipartFile file2 =
+                new MockMultipartFile("file", "test.pdf", "application/pdf", "content2".getBytes());
+
+        // Act - store first file
+        String storedPath1 = fileStorageService.storeFile(file1, expenseId);
+
+        // Store second file with same name (should get unique UUID prefix)
+        String storedPath2 = fileStorageService.storeFile(file2, expenseId);
+
+        // Assert - both files should exist with different paths
+        assertThat(storedPath1).isNotEqualTo(storedPath2);
+        assertThat(fileStorageService.fileExists(storedPath1)).isTrue();
+        assertThat(fileStorageService.fileExists(storedPath2)).isTrue();
+    }
 }
