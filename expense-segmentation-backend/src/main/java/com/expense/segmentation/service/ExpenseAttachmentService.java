@@ -143,8 +143,7 @@ public class ExpenseAttachmentService {
         boolean isFinanceOrAdmin =
                 RoleType.FINANCE.equals(currentUserRole) || RoleType.ADMIN.equals(currentUserRole);
 
-        if (!isFinanceOrAdmin
-                && !currentUser.getId().equals(attachment.getUploadedBy().getId())) {
+        if (!isFinanceOrAdmin && !currentUser.getId().equals(attachment.getUploadedBy().getId())) {
             log.warn(
                     "User {} attempted to delete attachment {} without permission",
                     currentUser.getId(),

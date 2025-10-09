@@ -46,9 +46,7 @@ public class ExpenseAttachmentController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('EMPLOYEE', 'MANAGER', 'FINANCE', 'ADMIN')")
-    @Operation(
-            summary = "List attachments",
-            description = "Get all attachments for an expense")
+    @Operation(summary = "List attachments", description = "Get all attachments for an expense")
     public ResponseEntity<List<AttachmentResponse>> listAttachments(
             @Parameter(description = "Expense ID") @PathVariable UUID expenseId) {
         log.info("GET /expenses/{}/attachments - Listing attachments", expenseId);
@@ -58,14 +56,14 @@ public class ExpenseAttachmentController {
 
     @GetMapping("/{attachmentId}")
     @PreAuthorize("hasAnyRole('EMPLOYEE', 'MANAGER', 'FINANCE', 'ADMIN')")
-    @Operation(
-            summary = "Download attachment",
-            description = "Download a specific attachment file")
+    @Operation(summary = "Download attachment", description = "Download a specific attachment file")
     public ResponseEntity<Resource> downloadAttachment(
             @Parameter(description = "Expense ID") @PathVariable UUID expenseId,
             @Parameter(description = "Attachment ID") @PathVariable UUID attachmentId) {
         log.info(
-                "GET /expenses/{}/attachments/{} - Downloading attachment", expenseId, attachmentId);
+                "GET /expenses/{}/attachments/{} - Downloading attachment",
+                expenseId,
+                attachmentId);
 
         Resource resource = attachmentService.downloadAttachment(attachmentId);
         ExpenseAttachment attachment = attachmentService.getAttachmentById(attachmentId);
@@ -87,7 +85,9 @@ public class ExpenseAttachmentController {
             @Parameter(description = "Expense ID") @PathVariable UUID expenseId,
             @Parameter(description = "Attachment ID") @PathVariable UUID attachmentId) {
         log.info(
-                "DELETE /expenses/{}/attachments/{} - Deleting attachment", expenseId, attachmentId);
+                "DELETE /expenses/{}/attachments/{} - Deleting attachment",
+                expenseId,
+                attachmentId);
         attachmentService.deleteAttachment(attachmentId);
         return ResponseEntity.noContent().build();
     }

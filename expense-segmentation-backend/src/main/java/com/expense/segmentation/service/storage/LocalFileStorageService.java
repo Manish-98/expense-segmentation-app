@@ -23,8 +23,7 @@ public class LocalFileStorageService implements FileStorageService {
 
     private final Path fileStorageLocation;
 
-    public LocalFileStorageService(
-            @Value("${file.upload-dir:uploads/expenses}") String uploadDir) {
+    public LocalFileStorageService(@Value("${file.upload-dir:uploads/expenses}") String uploadDir) {
         this.fileStorageLocation = Paths.get(uploadDir).toAbsolutePath().normalize();
 
         try {
@@ -41,9 +40,8 @@ public class LocalFileStorageService implements FileStorageService {
     public String storeFile(MultipartFile file, String expenseId) {
         // Sanitize filename
         String originalFilename =
-                StringUtils.cleanPath(file.getOriginalFilename() != null
-                        ? file.getOriginalFilename()
-                        : "file");
+                StringUtils.cleanPath(
+                        file.getOriginalFilename() != null ? file.getOriginalFilename() : "file");
 
         try {
             // Check if the filename contains invalid characters
