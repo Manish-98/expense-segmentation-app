@@ -7,7 +7,6 @@ import com.expense.segmentation.exception.InvalidOperationException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -116,8 +115,7 @@ class LocalFileStorageServiceTest {
         // Arrange
         String expenseId = "test-expense";
         MockMultipartFile file =
-                new MockMultipartFile(
-                        "file", "test.pdf", "application/pdf", "content".getBytes());
+                new MockMultipartFile("file", "test.pdf", "application/pdf", "content".getBytes());
         String storedPath = fileStorageService.storeFile(file, expenseId);
 
         // Act
@@ -145,8 +143,7 @@ class LocalFileStorageServiceTest {
         // Arrange
         String expenseId = "test-expense";
         MockMultipartFile file =
-                new MockMultipartFile(
-                        "file", "test.pdf", "application/pdf", "content".getBytes());
+                new MockMultipartFile("file", "test.pdf", "application/pdf", "content".getBytes());
         String storedPath = fileStorageService.storeFile(file, expenseId);
 
         // Verify file exists before deletion
@@ -173,8 +170,7 @@ class LocalFileStorageServiceTest {
         // Arrange
         String expenseId = "test-expense";
         MockMultipartFile file =
-                new MockMultipartFile(
-                        "file", "test.pdf", "application/pdf", "content".getBytes());
+                new MockMultipartFile("file", "test.pdf", "application/pdf", "content".getBytes());
         String storedPath = fileStorageService.storeFile(file, expenseId);
 
         // Act
@@ -201,8 +197,7 @@ class LocalFileStorageServiceTest {
         // Arrange
         String expenseId = "test-expense";
         MockMultipartFile file =
-                new MockMultipartFile(
-                        "file", "test.pdf", "application/pdf", "content".getBytes());
+                new MockMultipartFile("file", "test.pdf", "application/pdf", "content".getBytes());
         String storedPath = fileStorageService.storeFile(file, expenseId);
 
         // Act
@@ -234,11 +229,9 @@ class LocalFileStorageServiceTest {
         // Arrange
         String expenseId = "test-expense";
         MockMultipartFile file1 =
-                new MockMultipartFile(
-                        "file", "test.pdf", "application/pdf", "content1".getBytes());
+                new MockMultipartFile("file", "test.pdf", "application/pdf", "content1".getBytes());
         MockMultipartFile file2 =
-                new MockMultipartFile(
-                        "file", "test.pdf", "application/pdf", "content2".getBytes());
+                new MockMultipartFile("file", "test.pdf", "application/pdf", "content2".getBytes());
 
         // Act
         String storedPath1 = fileStorageService.storeFile(file1, expenseId);

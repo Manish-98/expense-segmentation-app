@@ -1,6 +1,5 @@
 package com.expense.segmentation.integration;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -8,8 +7,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.expense.segmentation.dto.CreateExpenseRequest;
 import com.expense.segmentation.dto.RegisterRequest;
-import com.expense.segmentation.model.Expense;
-import com.expense.segmentation.model.ExpenseStatus;
 import com.expense.segmentation.model.ExpenseType;
 import com.expense.segmentation.model.Role;
 import com.expense.segmentation.model.RoleType;
@@ -21,7 +18,6 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -104,10 +100,7 @@ class ExpenseAttachmentIntegrationTest {
         // Step 1: Upload attachment
         MockMultipartFile file =
                 new MockMultipartFile(
-                        "file",
-                        "receipt.pdf",
-                        "application/pdf",
-                        "receipt content".getBytes());
+                        "file", "receipt.pdf", "application/pdf", "receipt content".getBytes());
 
         MvcResult uploadResult =
                 mockMvc.perform(
@@ -120,7 +113,8 @@ class ExpenseAttachmentIntegrationTest {
                         .andExpect(jsonPath("$.filename").value(notNullValue()))
                         .andExpect(jsonPath("$.originalFilename").value("receipt.pdf"))
                         .andExpect(jsonPath("$.mimeType").value("application/pdf"))
-                        .andExpect(jsonPath("$.fileSize").value("receipt content".getBytes().length))
+                        .andExpect(
+                                jsonPath("$.fileSize").value("receipt content".getBytes().length))
                         .andExpect(jsonPath("$.uploadedByEmail").value("employee@test.com"))
                         .andExpect(jsonPath("$.uploadedByName").value("Employee User"))
                         .andReturn();
@@ -144,8 +138,7 @@ class ExpenseAttachmentIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_PDF))
                 .andExpect(
-                        header()
-                                .string(
+                        header().string(
                                         "Content-Disposition",
                                         "attachment; filename=\"receipt.pdf\""));
 
@@ -211,8 +204,7 @@ class ExpenseAttachmentIntegrationTest {
 
         // Upload JPEG
         MockMultipartFile jpegFile =
-                new MockMultipartFile(
-                        "file", "photo.jpg", "image/jpeg", "jpeg content".getBytes());
+                new MockMultipartFile("file", "photo.jpg", "image/jpeg", "jpeg content".getBytes());
 
         mockMvc.perform(
                         multipart("/expenses/" + expenseId + "/attachments")

@@ -56,17 +56,18 @@ class ExpenseAttachmentControllerTest {
         expenseId = UUID.randomUUID();
         attachmentId = UUID.randomUUID();
 
-        attachmentResponse = AttachmentResponse.builder()
-                .id(attachmentId)
-                .expenseId(expenseId)
-                .filename("test-file.pdf")
-                .originalFilename("original-file.pdf")
-                .mimeType("application/pdf")
-                .fileSize(1024L)
-                .uploadedByEmail("test@example.com")
-                .uploadedByName("Test User")
-                .uploadedAt(LocalDateTime.now())
-                .build();
+        attachmentResponse =
+                AttachmentResponse.builder()
+                        .id(attachmentId)
+                        .expenseId(expenseId)
+                        .filename("test-file.pdf")
+                        .originalFilename("original-file.pdf")
+                        .mimeType("application/pdf")
+                        .fileSize(1024L)
+                        .uploadedByEmail("test@example.com")
+                        .uploadedByName("Test User")
+                        .uploadedAt(LocalDateTime.now())
+                        .build();
 
         expenseAttachment = new ExpenseAttachment();
         expenseAttachment.setId(attachmentId);
@@ -81,12 +82,10 @@ class ExpenseAttachmentControllerTest {
         // Arrange
         MockMultipartFile file =
                 new MockMultipartFile(
-                        "file",
-                        "test.pdf",
-                        "application/pdf",
-                        "test content".getBytes());
+                        "file", "test.pdf", "application/pdf", "test content".getBytes());
 
-        when(attachmentService.uploadAttachment(eq(expenseId), any())).thenReturn(attachmentResponse);
+        when(attachmentService.uploadAttachment(eq(expenseId), any()))
+                .thenReturn(attachmentResponse);
 
         // Act & Assert
         mockMvc.perform(
@@ -112,12 +111,10 @@ class ExpenseAttachmentControllerTest {
         // Arrange
         MockMultipartFile file =
                 new MockMultipartFile(
-                        "file",
-                        "test.pdf",
-                        "application/pdf",
-                        "test content".getBytes());
+                        "file", "test.pdf", "application/pdf", "test content".getBytes());
 
-        when(attachmentService.uploadAttachment(eq(expenseId), any())).thenReturn(attachmentResponse);
+        when(attachmentService.uploadAttachment(eq(expenseId), any()))
+                .thenReturn(attachmentResponse);
 
         // Act & Assert
         mockMvc.perform(
@@ -133,12 +130,10 @@ class ExpenseAttachmentControllerTest {
         // Arrange
         MockMultipartFile file =
                 new MockMultipartFile(
-                        "file",
-                        "test.pdf",
-                        "application/pdf",
-                        "test content".getBytes());
+                        "file", "test.pdf", "application/pdf", "test content".getBytes());
 
-        when(attachmentService.uploadAttachment(eq(expenseId), any())).thenReturn(attachmentResponse);
+        when(attachmentService.uploadAttachment(eq(expenseId), any()))
+                .thenReturn(attachmentResponse);
 
         // Act & Assert
         mockMvc.perform(
@@ -152,29 +147,31 @@ class ExpenseAttachmentControllerTest {
     @WithMockUser(roles = "EMPLOYEE")
     void listAttachments_WithEmployeeRole_ShouldReturnAttachments() throws Exception {
         // Arrange
-        AttachmentResponse attachment1 = AttachmentResponse.builder()
-                .id(UUID.randomUUID())
-                .expenseId(expenseId)
-                .filename("file1.pdf")
-                .originalFilename("file1.pdf")
-                .mimeType("application/pdf")
-                .fileSize(1024L)
-                .uploadedByEmail("test@example.com")
-                .uploadedByName("Test User")
-                .uploadedAt(LocalDateTime.now())
-                .build();
+        AttachmentResponse attachment1 =
+                AttachmentResponse.builder()
+                        .id(UUID.randomUUID())
+                        .expenseId(expenseId)
+                        .filename("file1.pdf")
+                        .originalFilename("file1.pdf")
+                        .mimeType("application/pdf")
+                        .fileSize(1024L)
+                        .uploadedByEmail("test@example.com")
+                        .uploadedByName("Test User")
+                        .uploadedAt(LocalDateTime.now())
+                        .build();
 
-        AttachmentResponse attachment2 = AttachmentResponse.builder()
-                .id(UUID.randomUUID())
-                .expenseId(expenseId)
-                .filename("file2.pdf")
-                .originalFilename("file2.pdf")
-                .mimeType("application/pdf")
-                .fileSize(2048L)
-                .uploadedByEmail("test@example.com")
-                .uploadedByName("Test User")
-                .uploadedAt(LocalDateTime.now())
-                .build();
+        AttachmentResponse attachment2 =
+                AttachmentResponse.builder()
+                        .id(UUID.randomUUID())
+                        .expenseId(expenseId)
+                        .filename("file2.pdf")
+                        .originalFilename("file2.pdf")
+                        .mimeType("application/pdf")
+                        .fileSize(2048L)
+                        .uploadedByEmail("test@example.com")
+                        .uploadedByName("Test User")
+                        .uploadedAt(LocalDateTime.now())
+                        .build();
 
         List<AttachmentResponse> attachments = Arrays.asList(attachment1, attachment2);
 
@@ -222,8 +219,7 @@ class ExpenseAttachmentControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_PDF))
                 .andExpect(
-                        header()
-                                .string(
+                        header().string(
                                         "Content-Disposition",
                                         "attachment; filename=\"original-file.pdf\""));
 
@@ -310,22 +306,20 @@ class ExpenseAttachmentControllerTest {
         // Arrange
         MockMultipartFile imageFile =
                 new MockMultipartFile(
-                        "file",
-                        "photo.jpg",
-                        "image/jpeg",
-                        "image content".getBytes());
+                        "file", "photo.jpg", "image/jpeg", "image content".getBytes());
 
-        AttachmentResponse imageResponse = AttachmentResponse.builder()
-                .id(UUID.randomUUID())
-                .expenseId(expenseId)
-                .filename("photo.jpg")
-                .originalFilename("photo.jpg")
-                .mimeType("image/jpeg")
-                .fileSize(1024L)
-                .uploadedByEmail("test@example.com")
-                .uploadedByName("Test User")
-                .uploadedAt(LocalDateTime.now())
-                .build();
+        AttachmentResponse imageResponse =
+                AttachmentResponse.builder()
+                        .id(UUID.randomUUID())
+                        .expenseId(expenseId)
+                        .filename("photo.jpg")
+                        .originalFilename("photo.jpg")
+                        .mimeType("image/jpeg")
+                        .fileSize(1024L)
+                        .uploadedByEmail("test@example.com")
+                        .uploadedByName("Test User")
+                        .uploadedAt(LocalDateTime.now())
+                        .build();
 
         when(attachmentService.uploadAttachment(eq(expenseId), any())).thenReturn(imageResponse);
 
@@ -344,22 +338,20 @@ class ExpenseAttachmentControllerTest {
         // Arrange
         MockMultipartFile imageFile =
                 new MockMultipartFile(
-                        "file",
-                        "screenshot.png",
-                        "image/png",
-                        "image content".getBytes());
+                        "file", "screenshot.png", "image/png", "image content".getBytes());
 
-        AttachmentResponse imageResponse = AttachmentResponse.builder()
-                .id(UUID.randomUUID())
-                .expenseId(expenseId)
-                .filename("screenshot.png")
-                .originalFilename("screenshot.png")
-                .mimeType("image/png")
-                .fileSize(1024L)
-                .uploadedByEmail("test@example.com")
-                .uploadedByName("Test User")
-                .uploadedAt(LocalDateTime.now())
-                .build();
+        AttachmentResponse imageResponse =
+                AttachmentResponse.builder()
+                        .id(UUID.randomUUID())
+                        .expenseId(expenseId)
+                        .filename("screenshot.png")
+                        .originalFilename("screenshot.png")
+                        .mimeType("image/png")
+                        .fileSize(1024L)
+                        .uploadedByEmail("test@example.com")
+                        .uploadedByName("Test User")
+                        .uploadedAt(LocalDateTime.now())
+                        .build();
 
         when(attachmentService.uploadAttachment(eq(expenseId), any())).thenReturn(imageResponse);
 

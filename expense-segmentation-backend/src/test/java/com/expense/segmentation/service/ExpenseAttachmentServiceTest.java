@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -31,11 +30,9 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -113,10 +110,7 @@ class ExpenseAttachmentServiceTest {
         UUID expenseId = testExpense.getId();
         MockMultipartFile file =
                 new MockMultipartFile(
-                        "file",
-                        "test.pdf",
-                        "application/pdf",
-                        "test content".getBytes());
+                        "file", "test.pdf", "application/pdf", "test content".getBytes());
 
         when(userRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
         when(expenseRepository.findByIdWithCreatedBy(expenseId))
@@ -184,8 +178,7 @@ class ExpenseAttachmentServiceTest {
         // Arrange
         UUID expenseId = UUID.randomUUID();
         MockMultipartFile invalidFile =
-                new MockMultipartFile(
-                        "file", "test.exe", "application/exe", "content".getBytes());
+                new MockMultipartFile("file", "test.exe", "application/exe", "content".getBytes());
 
         // Act & Assert
         assertThatThrownBy(() -> attachmentService.uploadAttachment(expenseId, invalidFile))
@@ -201,10 +194,7 @@ class ExpenseAttachmentServiceTest {
         UUID expenseId = UUID.randomUUID();
         MockMultipartFile invalidFile =
                 new MockMultipartFile(
-                        "file",
-                        "../../../malicious.pdf",
-                        "application/pdf",
-                        "content".getBytes());
+                        "file", "../../../malicious.pdf", "application/pdf", "content".getBytes());
 
         // Act & Assert
         assertThatThrownBy(() -> attachmentService.uploadAttachment(expenseId, invalidFile))
@@ -219,8 +209,7 @@ class ExpenseAttachmentServiceTest {
         // Arrange
         UUID nonExistentExpenseId = UUID.randomUUID();
         MockMultipartFile file =
-                new MockMultipartFile(
-                        "file", "test.pdf", "application/pdf", "content".getBytes());
+                new MockMultipartFile("file", "test.pdf", "application/pdf", "content".getBytes());
 
         when(userRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
         when(expenseRepository.findByIdWithCreatedBy(nonExistentExpenseId))
@@ -246,8 +235,7 @@ class ExpenseAttachmentServiceTest {
 
         UUID expenseId = testExpense.getId();
         MockMultipartFile file =
-                new MockMultipartFile(
-                        "file", "test.pdf", "application/pdf", "content".getBytes());
+                new MockMultipartFile("file", "test.pdf", "application/pdf", "content".getBytes());
 
         when(userRepository.findByEmail(anotherUser.getEmail()))
                 .thenReturn(Optional.of(anotherUser));
@@ -268,8 +256,7 @@ class ExpenseAttachmentServiceTest {
         // Arrange
         UUID expenseId = testExpense.getId();
         MockMultipartFile file =
-                new MockMultipartFile(
-                        "file", "test.pdf", "application/pdf", "content".getBytes());
+                new MockMultipartFile("file", "test.pdf", "application/pdf", "content".getBytes());
 
         when(authentication.getName()).thenReturn(financeUser.getEmail());
         when(userRepository.findByEmail(financeUser.getEmail()))
@@ -306,8 +293,7 @@ class ExpenseAttachmentServiceTest {
         when(userRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
         when(expenseRepository.findByIdWithCreatedBy(expenseId))
                 .thenReturn(Optional.of(testExpense));
-        when(attachmentRepository.findByExpenseIdWithUploadedBy(expenseId))
-                .thenReturn(attachments);
+        when(attachmentRepository.findByExpenseIdWithUploadedBy(expenseId)).thenReturn(attachments);
 
         // Act
         List<AttachmentResponse> responses = attachmentService.getAttachmentsByExpense(expenseId);
@@ -328,8 +314,7 @@ class ExpenseAttachmentServiceTest {
                 .thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThatThrownBy(
-                        () -> attachmentService.getAttachmentsByExpense(nonExistentExpenseId))
+        assertThatThrownBy(() -> attachmentService.getAttachmentsByExpense(nonExistentExpenseId))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -361,8 +346,7 @@ class ExpenseAttachmentServiceTest {
         UUID nonExistentId = UUID.randomUUID();
 
         when(userRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
-        when(attachmentRepository.findByIdWithDetails(nonExistentId))
-                .thenReturn(Optional.empty());
+        when(attachmentRepository.findByIdWithDetails(nonExistentId)).thenReturn(Optional.empty());
 
         // Act & Assert
         assertThatThrownBy(() -> attachmentService.downloadAttachment(nonExistentId))
@@ -451,8 +435,7 @@ class ExpenseAttachmentServiceTest {
         when(userRepository.findByEmail(testUser.getEmail())).thenReturn(Optional.of(testUser));
         when(expenseRepository.findByIdWithCreatedBy(expenseId))
                 .thenReturn(Optional.of(testExpense));
-        when(fileStorageService.storeFile(any(), anyString()))
-                .thenReturn("stored/path/photo.jpg");
+        when(fileStorageService.storeFile(any(), anyString())).thenReturn("stored/path/photo.jpg");
         when(attachmentRepository.save(any(ExpenseAttachment.class)))
                 .thenAnswer(
                         invocation -> {
