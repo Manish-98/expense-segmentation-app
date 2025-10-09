@@ -1,6 +1,6 @@
 package com.expense.segmentation.service.storage;
 
-import com.expense.segmentation.exception.BusinessException;
+import com.expense.segmentation.exception.InvalidOperationException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -31,7 +31,7 @@ public class LocalFileStorageService implements FileStorageService {
             log.info("File storage location initialized at: {}", this.fileStorageLocation);
         } catch (Exception ex) {
             log.error("Could not create the directory for file uploads", ex);
-            throw new BusinessException(
+            throw new InvalidOperationException(
                     "Could not create the directory where the uploaded files will be stored.");
         }
     }
@@ -46,7 +46,7 @@ public class LocalFileStorageService implements FileStorageService {
         try {
             // Check if the filename contains invalid characters
             if (originalFilename.contains("..")) {
-                throw new BusinessException(
+                throw new InvalidOperationException(
                         "Filename contains invalid path sequence: " + originalFilename);
             }
 
@@ -75,7 +75,7 @@ public class LocalFileStorageService implements FileStorageService {
 
         } catch (IOException ex) {
             log.error("Could not store file: {}", originalFilename, ex);
-            throw new BusinessException("Could not store file: " + originalFilename);
+            throw new InvalidOperationException("Could not store file: " + originalFilename);
         }
     }
 
@@ -89,11 +89,11 @@ public class LocalFileStorageService implements FileStorageService {
                 return resource;
             } else {
                 log.error("File not found or not readable: {}", storedPath);
-                throw new BusinessException("File not found: " + storedPath);
+                throw new InvalidOperationException("File not found: " + storedPath);
             }
         } catch (MalformedURLException ex) {
             log.error("Malformed URL for file: {}", storedPath, ex);
-            throw new BusinessException("File not found: " + storedPath);
+            throw new InvalidOperationException("File not found: " + storedPath);
         }
     }
 
@@ -105,7 +105,7 @@ public class LocalFileStorageService implements FileStorageService {
             log.info("File deleted successfully: {}", storedPath);
         } catch (IOException ex) {
             log.error("Could not delete file: {}", storedPath, ex);
-            throw new BusinessException("Could not delete file: " + storedPath);
+            throw new InvalidOperationException("Could not delete file: " + storedPath);
         }
     }
 

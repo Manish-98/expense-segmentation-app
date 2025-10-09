@@ -16,10 +16,7 @@ public class AttachmentMapper {
                 .mimeType(attachment.getMimeType())
                 .fileSize(attachment.getFileSize())
                 .uploadedByEmail(attachment.getUploadedBy().getEmail())
-                .uploadedByName(
-                        attachment.getUploadedBy().getFirstName()
-                                + " "
-                                + attachment.getUploadedBy().getLastName())
+                .uploadedByName(attachment.getUploadedBy().getName())
                 .uploadedAt(attachment.getUploadedAt())
                 .build();
     }

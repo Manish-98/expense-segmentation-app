@@ -1,7 +1,7 @@
 package com.expense.segmentation.service;
 
 import com.expense.segmentation.dto.AttachmentResponse;
-import com.expense.segmentation.exception.BusinessException;
+import com.expense.segmentation.exception.InvalidOperationException;
 import com.expense.segmentation.exception.ResourceNotFoundException;
 import com.expense.segmentation.mapper.AttachmentMapper;
 import com.expense.segmentation.model.Expense;
@@ -174,12 +174,12 @@ public class ExpenseAttachmentService {
     private void validateFile(MultipartFile file) {
         // Check if file is empty
         if (file.isEmpty()) {
-            throw new BusinessException("Cannot upload empty file");
+            throw new InvalidOperationException("Cannot upload empty file");
         }
 
         // Check file size
         if (file.getSize() > maxFileSize) {
-            throw new BusinessException(
+            throw new InvalidOperationException(
                     "File size exceeds maximum allowed size of "
                             + (maxFileSize / 1024 / 1024)
                             + "MB");
@@ -188,14 +188,14 @@ public class ExpenseAttachmentService {
         // Check MIME type
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_MIME_TYPES.contains(contentType.toLowerCase())) {
-            throw new BusinessException(
+            throw new InvalidOperationException(
                     "File type not allowed. Allowed types: PDF, JPEG, JPG, PNG");
         }
 
         // Additional filename validation
         String filename = file.getOriginalFilename();
         if (filename == null || filename.contains("..")) {
-            throw new BusinessException("Invalid filename");
+            throw new InvalidOperationException("Invalid filename");
         }
     }
 
