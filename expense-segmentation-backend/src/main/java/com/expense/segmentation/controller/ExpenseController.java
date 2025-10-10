@@ -1,6 +1,8 @@
 package com.expense.segmentation.controller;
 
 import com.expense.segmentation.dto.CreateExpenseRequest;
+import com.expense.segmentation.dto.CreateExpenseSegmentRequest;
+import com.expense.segmentation.dto.CreateMultipleExpenseSegmentsRequest;
 import com.expense.segmentation.dto.ExpenseResponse;
 import com.expense.segmentation.dto.ExpenseSegmentResponse;
 import com.expense.segmentation.dto.PagedExpenseResponse;
@@ -118,5 +120,46 @@ public class ExpenseController {
     public ResponseEntity<List<ExpenseSegmentResponse>> getExpenseSegments(@PathVariable UUID id) {
         log.info("GET /expenses/{}/segments - Retrieving expense segments", id);
         return ResponseEntity.ok(expenseSegmentService.getSegmentsByExpenseId(id));
+    }
+
+    @PostMapping("/{id}/segments")
+    @PreAuthorize("hasAnyRole('EMPLOYEE', 'MANAGER', 'FINANCE', 'ADMIN')")
+    @Operation(
+            summary = "Add expense segment",
+            description = "Adds a single segment to an expense. Only allowed if no segments exist.")
+    public ResponseEntity<List<ExpenseSegmentResponse>> addExpenseSegment(
+            @PathVariable UUID id, @Valid @RequestBody CreateExpenseSegmentRequest request) {
+        log.info("POST /expenses/{}/segments - Adding expense segment", id);
+        List<ExpenseSegmentResponse> responses =
+                expenseSegmentService.addExpenseSegment(id, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(responses);
+    }
+
+    @PostMapping("/{id}/segments/batch")
+    @PreAuthorize("hasAnyRole('EMPLOYEE', 'MANAGER', 'FINANCE', 'ADMIN')")
+    @Operation(
+            summary = "Add multiple expense segments",
+            description = "Adds multiple segments to an expense, replacing any existing segments.")
+    public ResponseEntity<List<ExpenseSegmentResponse>> addMultipleExpenseSegments(
+            @PathVariable UUID id,
+            @Valid @RequestBody CreateMultipleExpenseSegmentsRequest request) {
+        log.info("POST /expenses/{}/segments/batch - Adding multiple expense segments", id);
+        List<ExpenseSegmentResponse> responses =
+                expenseSegmentService.addMultipleExpenseSegments(id, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(responses);
+    }
+
+    @PutMapping("/{id}/segments")
+    @PreAuthorize("hasAnyRole('EMPLOYEE', 'MANAGER', 'FINANCE', 'ADMIN')")
+    @Operation(
+            summary = "Replace all expense segments",
+            description = "Replaces all existing segments with the provided segments.")
+    public ResponseEntity<List<ExpenseSegmentResponse>> replaceAllExpenseSegments(
+            @PathVariable UUID id,
+            @Valid @RequestBody CreateMultipleExpenseSegmentsRequest request) {
+        log.info("PUT /expenses/{}/segments - Replacing all expense segments", id);
+        List<ExpenseSegmentResponse> responses =
+                expenseSegmentService.replaceAllExpenseSegments(id, request);
+        return ResponseEntity.ok(responses);
     }
 }

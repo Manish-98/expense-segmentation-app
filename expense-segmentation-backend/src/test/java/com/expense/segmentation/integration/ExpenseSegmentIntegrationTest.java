@@ -2,6 +2,8 @@ package com.expense.segmentation.integration;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -227,5 +229,470 @@ class ExpenseSegmentIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(4));
+    }
+
+    @Test
+    @WithMockUser(roles = {"EMPLOYEE"})
+    void addExpenseSegment_WithValidData_ShouldCreateAndReturnSegment() throws Exception {
+        String segmentRequest =
+                """
+            {
+                "category": "Travel",
+                "amount": 50.00
+            }
+            """;
+
+        mockMvc.perform(
+                        post("/expenses/{id}/segments", testExpenseId)
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(segmentRequest))
+                .andExpect(status().isCreated())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].category").value("Travel"))
+                .andExpect(jsonPath("$[0].amount").value(50.00))
+                .andExpect(jsonPath("$[0].percentage").value(50.00))
+                .andExpect(jsonPath("$[0].id").exists());
+
+        // Verify the segment was actually saved by retrieving it
+        mockMvc.perform(
+                        get("/expenses/{id}/segments", testExpenseId)
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].category").value("Travel"));
+    }
+
+    @Test
+    @WithMockUser(roles = {"EMPLOYEE"})
+    void addExpenseSegment_WithPercentageProvided_ShouldUseProvidedPercentage() throws Exception {
+        String segmentRequest =
+                """
+            {
+                "category": "Meals",
+                "amount": 30.00,
+                "percentage": 35.00
+            }
+            """;
+
+        mockMvc.perform(
+                        post("/expenses/{id}/segments", testExpenseId)
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(segmentRequest))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$[0].percentage").value(35.00));
+    }
+
+    @Test
+    @WithMockUser(roles = {"EMPLOYEE"})
+    void addExpenseSegment_WithAmountExceedingExpense_ShouldReturnBadRequest() throws Exception {
+        String segmentRequest =
+                """
+            {
+                "category": "Travel",
+                "amount": 150.00
+            }
+            """;
+
+        mockMvc.perform(
+                        post("/expenses/{id}/segments", testExpenseId)
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(segmentRequest))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(
+                        jsonPath("$.message")
+                                .value(
+                                        org.hamcrest.Matchers.containsString(
+                                                "exceeds expense amount")));
+    }
+
+    @Test
+    @WithMockUser(roles = {"EMPLOYEE"})
+    void addExpenseSegment_WithMissingCategory_ShouldReturnBadRequest() throws Exception {
+        String segmentRequest =
+                """
+            {
+                "amount": 50.00
+            }
+            """;
+
+        mockMvc.perform(
+                        post("/expenses/{id}/segments", testExpenseId)
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(segmentRequest))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(roles = {"EMPLOYEE"})
+    void addExpenseSegment_WithNegativeAmount_ShouldReturnBadRequest() throws Exception {
+        String segmentRequest =
+                """
+            {
+                "category": "Travel",
+                "amount": -10.00
+            }
+            """;
+
+        mockMvc.perform(
+                        post("/expenses/{id}/segments", testExpenseId)
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(segmentRequest))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(roles = {"EMPLOYEE"})
+    void addExpenseSegment_WithZeroAmount_ShouldReturnBadRequest() throws Exception {
+        String segmentRequest =
+                """
+            {
+                "category": "Travel",
+                "amount": 0.00
+            }
+            """;
+
+        mockMvc.perform(
+                        post("/expenses/{id}/segments", testExpenseId)
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(segmentRequest))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(roles = {"EMPLOYEE"})
+    void addExpenseSegment_WithInvalidExpenseId_ShouldReturnNotFound() throws Exception {
+        UUID invalidExpenseId = UUID.randomUUID();
+        String segmentRequest =
+                """
+            {
+                "category": "Travel",
+                "amount": 50.00
+            }
+            """;
+
+        mockMvc.perform(
+                        post("/expenses/{id}/segments", invalidExpenseId)
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(segmentRequest))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(roles = {"EMPLOYEE"})
+    void addExpenseSegment_WhenSegmentsAlreadyExist_ShouldReturnBadRequest() throws Exception {
+        // First, create a segment
+        String segmentRequest1 =
+                """
+            {
+                "category": "Travel",
+                "amount": 50.00
+            }
+            """;
+
+        mockMvc.perform(
+                        post("/expenses/{id}/segments", testExpenseId)
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(segmentRequest1))
+                .andExpect(status().isCreated());
+
+        // Try to add another segment to the same expense
+        String segmentRequest2 =
+                """
+            {
+                "category": "Meals",
+                "amount": 50.00
+            }
+            """;
+
+        mockMvc.perform(
+                        post("/expenses/{id}/segments", testExpenseId)
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(segmentRequest2))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(
+                        jsonPath("$.message")
+                                .value(
+                                        org.hamcrest.Matchers.containsString(
+                                                "already has segments")));
+    }
+
+    @Test
+    @WithMockUser(roles = {"EMPLOYEE"})
+    void addMultipleExpenseSegments_WithValidData_ShouldCreateAllSegments() throws Exception {
+        String segmentsRequest =
+                """
+            {
+                "segments": [
+                    {
+                        "category": "Travel",
+                        "amount": 40.00
+                    },
+                    {
+                        "category": "Meals",
+                        "amount": 60.00
+                    }
+                ]
+            }
+            """;
+
+        mockMvc.perform(
+                        post("/expenses/{id}/segments/batch", testExpenseId)
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(segmentsRequest))
+                .andExpect(status().isCreated())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(
+                        jsonPath("$[*].category")
+                                .value(org.hamcrest.Matchers.containsInAnyOrder("Travel", "Meals")))
+                .andExpect(
+                        jsonPath("$[*].amount")
+                                .value(org.hamcrest.Matchers.containsInAnyOrder(40.00, 60.00)))
+                .andExpect(
+                        jsonPath("$[*].percentage")
+                                .value(org.hamcrest.Matchers.containsInAnyOrder(40.00, 60.00)));
+    }
+
+    @Test
+    @WithMockUser(roles = {"EMPLOYEE"})
+    void addMultipleExpenseSegments_WithIncorrectTotal_ShouldReturnBadRequest() throws Exception {
+        String segmentsRequest =
+                """
+            {
+                "segments": [
+                    {
+                        "category": "Travel",
+                        "amount": 40.00
+                    },
+                    {
+                        "category": "Meals",
+                        "amount": 70.00
+                    }
+                ]
+            }
+            """;
+
+        mockMvc.perform(
+                        post("/expenses/{id}/segments/batch", testExpenseId)
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(segmentsRequest))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(
+                        jsonPath("$.message")
+                                .value(
+                                        org.hamcrest.Matchers.containsString(
+                                                "must equal expense amount")));
+    }
+
+    @Test
+    @WithMockUser(roles = {"EMPLOYEE"})
+    void addMultipleExpenseSegments_WithDuplicateCategories_ShouldReturnBadRequest()
+            throws Exception {
+        String segmentsRequest =
+                """
+            {
+                "segments": [
+                    {
+                        "category": "Travel",
+                        "amount": 40.00
+                    },
+                    {
+                        "category": "Travel",
+                        "amount": 60.00
+                    }
+                ]
+            }
+            """;
+
+        mockMvc.perform(
+                        post("/expenses/{id}/segments/batch", testExpenseId)
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(segmentsRequest))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(
+                        jsonPath("$.message")
+                                .value(
+                                        org.hamcrest.Matchers.containsString(
+                                                "categories must be unique")));
+    }
+
+    @Test
+    @WithMockUser(roles = {"EMPLOYEE"})
+    void replaceAllExpenseSegments_WithValidData_ShouldReplaceExistingSegments() throws Exception {
+        // First, create a segment
+        String segmentRequest1 =
+                """
+            {
+                "category": "Travel",
+                "amount": 50.00
+            }
+            """;
+
+        mockMvc.perform(
+                        post("/expenses/{id}/segments", testExpenseId)
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(segmentRequest1))
+                .andExpect(status().isCreated());
+
+        // Verify the segment exists
+        mockMvc.perform(
+                        get("/expenses/{id}/segments", testExpenseId)
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].category").value("Travel"));
+
+        // Replace with different segments
+        String replaceRequest =
+                """
+            {
+                "segments": [
+                    {
+                        "category": "Supplies",
+                        "amount": 100.00
+                    }
+                ]
+            }
+            """;
+
+        mockMvc.perform(
+                        put("/expenses/{id}/segments", testExpenseId)
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(replaceRequest))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].category").value("Supplies"))
+                .andExpect(jsonPath("$[0].amount").value(100.00))
+                .andExpect(jsonPath("$[0].percentage").value(100.00));
+
+        // Verify the old segment was replaced
+        mockMvc.perform(
+                        get("/expenses/{id}/segments", testExpenseId)
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].category").value("Supplies"));
+    }
+
+    @Test
+    @WithMockUser(roles = {"MANAGER"})
+    void addExpenseSegment_WithManagerRole_ShouldWork() throws Exception {
+        String segmentRequest =
+                """
+            {
+                "category": "Travel",
+                "amount": 50.00
+            }
+            """;
+
+        mockMvc.perform(
+                        post("/expenses/{id}/segments", testExpenseId)
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(segmentRequest))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    @WithMockUser(roles = {"FINANCE"})
+    void addExpenseSegment_WithFinanceRole_ShouldWork() throws Exception {
+        String segmentRequest =
+                """
+            {
+                "category": "Travel",
+                "amount": 50.00
+            }
+            """;
+
+        mockMvc.perform(
+                        post("/expenses/{id}/segments", testExpenseId)
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(segmentRequest))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMIN"})
+    void addExpenseSegment_WithAdminRole_ShouldWork() throws Exception {
+        String segmentRequest =
+                """
+            {
+                "category": "Travel",
+                "amount": 50.00
+            }
+            """;
+
+        mockMvc.perform(
+                        post("/expenses/{id}/segments", testExpenseId)
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(segmentRequest))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    @WithMockUser(roles = {"EMPLOYEE"})
+    void addExpenseSegment_WithEmptySegmentsList_ShouldReturnBadRequest() throws Exception {
+        String segmentsRequest =
+                """
+            {
+                "segments": []
+            }
+            """;
+
+        mockMvc.perform(
+                        post("/expenses/{id}/segments/batch", testExpenseId)
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(segmentsRequest))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(roles = {"EMPLOYEE"})
+    void addExpenseSegment_WithTooManySegments_ShouldReturnBadRequest() throws Exception {
+        StringBuilder segmentsJson = new StringBuilder("{\"segments\": [");
+        for (int i = 1; i <= 21; i++) {
+            if (i > 1) segmentsJson.append(",");
+            segmentsJson.append(
+                    String.format(
+                            "{\"category\": \"Category%d\", \"amount\": %.2f}", i, 100.0 / 21));
+        }
+        segmentsJson.append("]}");
+
+        mockMvc.perform(
+                        post("/expenses/{id}/segments/batch", testExpenseId)
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(segmentsJson.toString()))
+                .andExpect(status().isBadRequest());
     }
 }

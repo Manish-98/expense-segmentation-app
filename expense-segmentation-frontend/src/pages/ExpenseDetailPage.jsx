@@ -14,6 +14,8 @@ import Badge from '../components/Feedback/Badge';
 import Button from '../components/Button';
 import FileUpload from '../components/FileUpload';
 import Modal from '../components/Modal';
+import Input from '../components/Input';
+import Select from '../components/Select';
 import { useExpenseBadges } from '../hooks/useExpenseBadges';
 import { useFormatters } from '../hooks/useFormatters';
 
@@ -32,6 +34,15 @@ const ExpenseDetailPage = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [uploadError, setUploadError] = useState(null);
+  
+  // Segment management state
+  const [showAddSegment, setShowAddSegment] = useState(false);
+  const [segmentForm, setSegmentForm] = useState({
+    category: '',
+    amount: ''
+  });
+  const [segmentFormError, setSegmentFormError] = useState(null);
+  const [savingSegment, setSavingSegment] = useState(false);
 
   const { getStatusVariant, getTypeVariant } = useExpenseBadges();
   const { formatCurrency, formatDate, formatDateTime } = useFormatters();
@@ -54,18 +65,6 @@ const ExpenseDetailPage = () => {
             console.error('Failed to fetch attachments:', err);
           } finally {
             setLoadingAttachments(false);
-          }
-        };
-
-        const fetchSegments = async () => {
-          setLoadingSegments(true);
-          try {
-            const segmentData = await expenseSegmentService.getExpenseSegments(id);
-            setSegments(segmentData);
-          } catch (err) {
-            console.error('Failed to fetch segments:', err);
-          } finally {
-            setLoadingSegments(false);
           }
         };
 
@@ -147,6 +146,88 @@ const ExpenseDetailPage = () => {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
+  const fetchSegments = async () => {
+    setLoadingSegments(true);
+    try {
+      const segmentData = await expenseSegmentService.getExpenseSegments(id);
+      setSegments(segmentData);
+    } catch (err) {
+      console.error('Failed to fetch segments:', err);
+    } finally {
+      setLoadingSegments(false);
+    }
+  };
+
+  const handleSegmentInputChange = (e) => {
+    const { name, value } = e.target;
+    setSegmentForm({
+      ...segmentForm,
+      [name]: value
+    });
+    setSegmentFormError(null);
+  };
+
+  const validateSegmentForm = () => {
+    if (!segmentForm.category.trim()) {
+      setSegmentFormError('Category is required');
+      return false;
+    }
+    if (!segmentForm.amount || parseFloat(segmentForm.amount) <= 0) {
+      setSegmentFormError('Amount must be a positive number');
+      return false;
+    }
+    if (parseFloat(segmentForm.amount) > expense.amount) {
+      setSegmentFormError(`Amount cannot exceed total expense amount (${formatCurrency(expense.amount)})`);
+      return false;
+    }
+    return true;
+  };
+
+  const handleSaveSegment = async () => {
+    if (!validateSegmentForm()) return;
+
+    setSavingSegment(true);
+    setSegmentFormError(null);
+
+    try {
+      if (segments.length === 0) {
+        // Add single segment to expense with no segments
+        const segmentData = {
+          category: segmentForm.category.trim(),
+          amount: parseFloat(segmentForm.amount)
+        };
+
+        await expenseSegmentService.createExpenseSegment(id, segmentData);
+      } else {
+        // Replace all existing segments with new single segment
+        const segmentsData = {
+          segments: [{
+            category: segmentForm.category.trim(),
+            amount: parseFloat(segmentForm.amount)
+          }]
+        };
+
+        await expenseSegmentService.replaceAllExpenseSegments(id, segmentsData);
+      }
+      
+      // Reset form and refresh segments
+      setSegmentForm({ category: '', amount: '' });
+      setShowAddSegment(false);
+      fetchSegments();
+    } catch (err) {
+      console.error('Failed to save segment:', err);
+      setSegmentFormError(err.response?.data?.message || 'Failed to save segment');
+    } finally {
+      setSavingSegment(false);
+    }
+  };
+
+  const handleCancelAddSegment = () => {
+    setSegmentForm({ category: '', amount: '' });
+    setSegmentFormError(null);
+    setShowAddSegment(false);
   };
 
   if (loading) {
@@ -273,14 +354,104 @@ const ExpenseDetailPage = () => {
             </div>
 
             <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
-              <h4 className="text-sm font-medium text-gray-900 mb-4">Expense Segments</h4>
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="text-sm font-medium text-gray-900">Expense Segments</h4>
+                {!showAddSegment && (
+                  <Button
+                    size="sm"
+                    onClick={() => setShowAddSegment(true)}
+                  >
+                    {segments.length === 0 ? 'Add Segment' : 'Manage Segments'}
+                  </Button>
+                )}
+              </div>
               
               {loadingSegments ? (
                 <div className="flex justify-center py-4">
                   <LoadingSpinner size="sm" />
                 </div>
+              ) : showAddSegment ? (
+                <div className="bg-white p-4 rounded-lg border border-gray-200">
+                  <h5 className="text-sm font-medium text-gray-900 mb-3">
+                    {segments.length === 0 ? 'Add New Segment' : 'Replace All Segments'}
+                  </h5>
+                  {segments.length > 0 && (
+                    <p className="text-xs text-gray-500 mb-3">
+                      This will replace all existing segments with new ones
+                    </p>
+                  )}
+                  
+                  {segmentFormError && (
+                    <Alert
+                      type="error"
+                      message={segmentFormError}
+                      onClose={() => setSegmentFormError(null)}
+                      className="mb-3"
+                    />
+                  )}
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                    <Select
+                      label="Category"
+                      name="category"
+                      value={segmentForm.category}
+                      onChange={handleSegmentInputChange}
+                      error={segmentFormError && !segmentForm.category ? 'Category is required' : ''}
+                      options={[
+                        { value: 'Travel', label: 'Travel' },
+                        { value: 'Meals', label: 'Meals' },
+                        { value: 'Supplies', label: 'Supplies' },
+                        { value: 'Entertainment', label: 'Entertainment' },
+                        { value: 'Office', label: 'Office' },
+                        { value: 'Training', label: 'Training' },
+                        { value: 'Other', label: 'Other' }
+                      ]}
+                      required
+                    />
+                    
+                    <Input
+                      label="Amount"
+                      type="number"
+                      name="amount"
+                      value={segmentForm.amount}
+                      onChange={handleSegmentInputChange}
+                      error={segmentFormError && (!segmentForm.amount || parseFloat(segmentForm.amount) <= 0) ? 'Amount must be positive' : ''}
+                      placeholder="0.00"
+                      min="0.01"
+                      max={expense.amount}
+                      step="0.01"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="text-sm text-gray-600 mb-3">
+                    Remaining amount: {formatCurrency(expense.amount - (parseFloat(segmentForm.amount) || 0))}
+                  </div>
+                  
+                  <div className="flex justify-end space-x-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleCancelAddSegment}
+                      disabled={savingSegment}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleSaveSegment}
+                      isLoading={savingSegment}
+                      disabled={!segmentForm.category || !segmentForm.amount}
+                    >
+                      Save Segment
+                    </Button>
+                  </div>
+                </div>
               ) : segments.length === 0 ? (
-                <p className="text-sm text-gray-400 italic">No segments available</p>
+                <div className="text-center py-8">
+                  <p className="text-sm text-gray-400 italic mb-4">No segments available</p>
+                  <p className="text-xs text-gray-500">Click "Add Segment" to start categorizing this expense</p>
+                </div>
               ) : (
                 <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
                   <table className="min-w-full divide-y divide-gray-300">
