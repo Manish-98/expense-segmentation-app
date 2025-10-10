@@ -85,19 +85,6 @@ public class ExpenseController {
                 expenseService.getExpensesWithFilters(page, size, dateFrom, dateTo, type, status));
     }
 
-    @GetMapping("/all")
-    @PreAuthorize("hasAnyRole('FINANCE', 'ADMIN')")
-    @Operation(
-            summary = "Get all expenses (deprecated)",
-            description =
-                    "Finance and Admin only - retrieves all expenses without pagination."
-                            + " Deprecated: use GET /expenses with pagination instead")
-    @Deprecated
-    public ResponseEntity<List<ExpenseResponse>> getAllExpenses() {
-        log.info("GET /expenses/all - Retrieving all expenses");
-        return ResponseEntity.ok(expenseService.getAllExpenses());
-    }
-
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('EMPLOYEE', 'MANAGER', 'FINANCE', 'ADMIN')")
     @Operation(

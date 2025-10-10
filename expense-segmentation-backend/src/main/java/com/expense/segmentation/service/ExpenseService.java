@@ -55,17 +55,6 @@ public class ExpenseService {
     }
 
     @Transactional(readOnly = true)
-    public List<ExpenseResponse> getAllExpenses() {
-        log.debug("Fetching all expenses");
-        List<ExpenseResponse> expenses =
-                expenseRepository.findAllWithCreatedBy().stream()
-                        .map(expenseMapper::toResponse)
-                        .toList();
-        log.info("Retrieved {} expenses", expenses.size());
-        return expenses;
-    }
-
-    @Transactional(readOnly = true)
     public ExpenseResponse getExpenseById(UUID id) {
         log.debug("Fetching expense with id: {}", id);
         Expense expense = findExpenseByIdWithCreatedBy(id);

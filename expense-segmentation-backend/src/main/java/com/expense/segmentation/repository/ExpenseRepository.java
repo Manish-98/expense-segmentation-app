@@ -18,15 +18,6 @@ import org.springframework.stereotype.Repository;
 public interface ExpenseRepository extends JpaRepository<Expense, UUID> {
 
     /**
-     * Fetches all expenses with their creator (user) eagerly loaded using JOIN FETCH. This prevents
-     * N+1 query problems when accessing expense.createdBy.
-     *
-     * @return list of all expenses with eagerly loaded creator
-     */
-    @Query("SELECT e FROM Expense e LEFT JOIN FETCH e.createdBy")
-    List<Expense> findAllWithCreatedBy();
-
-    /**
      * Fetches an expense by ID with its creator (user) eagerly loaded using JOIN FETCH. This
      * prevents N+1 query problems when accessing expense.createdBy.
      *

@@ -163,28 +163,6 @@ class ExpenseServiceTest {
     }
 
     @Test
-    void getAllExpenses_ShouldReturnAllExpenses() {
-        // Arrange
-        Expense expense2 = new Expense();
-        expense2.setId(UUID.randomUUID());
-        expense2.setVendor("Vendor 2");
-        expense2.setAmount(new BigDecimal("200.00"));
-        expense2.setType(ExpenseType.INVOICE);
-        expense2.setCreatedBy(testUser);
-
-        when(expenseRepository.findAllWithCreatedBy())
-                .thenReturn(Arrays.asList(testExpense, expense2));
-
-        // Act
-        List<ExpenseResponse> responses = expenseService.getAllExpenses();
-
-        // Assert
-        assertThat(responses).hasSize(2);
-        assertThat(responses.get(0).getVendor()).isEqualTo("Test Vendor");
-        assertThat(responses.get(1).getVendor()).isEqualTo("Vendor 2");
-    }
-
-    @Test
     void getExpenseById_WithValidId_ShouldReturnExpense() {
         // Arrange
         UUID expenseId = testExpense.getId();

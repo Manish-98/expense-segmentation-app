@@ -196,31 +196,6 @@ class ExpenseControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "FINANCE")
-    void getAllExpenses_WithFinanceRole_ShouldReturnExpenses() throws Exception {
-        // Given
-        when(expenseService.getAllExpenses()).thenReturn(Arrays.asList(expenseResponse));
-
-        // When & Then
-        mockMvc.perform(get("/expenses/all"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$[0].vendor").value("Test Vendor"));
-    }
-
-    @Test
-    @WithMockUser(roles = "ADMIN")
-    void getAllExpenses_WithAdminRole_ShouldReturnExpenses() throws Exception {
-        // Given
-        when(expenseService.getAllExpenses()).thenReturn(Arrays.asList(expenseResponse));
-
-        // When & Then
-        mockMvc.perform(get("/expenses/all"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray());
-    }
-
-    @Test
     @WithMockUser(roles = "EMPLOYEE")
     void getExpenseById_WithEmployeeRole_ShouldReturnExpense() throws Exception {
         // Given
