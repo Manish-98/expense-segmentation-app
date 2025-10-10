@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import expenseService from '../api/expenseService';
 import attachmentService from '../api/attachmentService';
+import { expenseSegmentService } from '../api/expenseSegmentService';
 import PageLayout from '../components/Layout/PageLayout';
 import PageContainer from '../components/Layout/PageContainer';
 import Card from '../components/Layout/Card';
@@ -25,6 +26,8 @@ const ExpenseDetailPage = () => {
   const [error, setError] = useState(null);
   const [attachments, setAttachments] = useState([]);
   const [loadingAttachments, setLoadingAttachments] = useState(false);
+  const [segments, setSegments] = useState([]);
+  const [loadingSegments, setLoadingSegments] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -41,8 +44,33 @@ const ExpenseDetailPage = () => {
       try {
         const data = await expenseService.getExpenseById(id);
         setExpense(data);
-        // Fetch attachments
+        // Fetch attachments and segments
+        const fetchAttachments = async () => {
+          setLoadingAttachments(true);
+          try {
+            const attachmentData = await attachmentService.getAttachments(id);
+            setAttachments(attachmentData);
+          } catch (err) {
+            console.error('Failed to fetch attachments:', err);
+          } finally {
+            setLoadingAttachments(false);
+          }
+        };
+
+        const fetchSegments = async () => {
+          setLoadingSegments(true);
+          try {
+            const segmentData = await expenseSegmentService.getExpenseSegments(id);
+            setSegments(segmentData);
+          } catch (err) {
+            console.error('Failed to fetch segments:', err);
+          } finally {
+            setLoadingSegments(false);
+          }
+        };
+
         fetchAttachments();
+        fetchSegments();
       } catch (err) {
         console.error('Failed to fetch expense:', err);
         setError(err.response?.data?.message || 'Failed to load expense details');
@@ -53,21 +81,10 @@ const ExpenseDetailPage = () => {
 
     if (id) {
       fetchExpense();
-      fetchAttachments();
     }
   }, [id]);
 
-  const fetchAttachments = async () => {
-    setLoadingAttachments(true);
-    try {
-      const data = await attachmentService.getAttachments(id);
-      setAttachments(data);
-    } catch (err) {
-      console.error('Failed to fetch attachments:', err);
-    } finally {
-      setLoadingAttachments(false);
-    }
-  };
+
 
   const handleFileSelect = (file) => {
     setSelectedFile(file);
@@ -253,6 +270,51 @@ const ExpenseDetailPage = () => {
                   </div>
                 )}
               </dl>
+            </div>
+
+            <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
+              <h4 className="text-sm font-medium text-gray-900 mb-4">Expense Segments</h4>
+              
+              {loadingSegments ? (
+                <div className="flex justify-center py-4">
+                  <LoadingSpinner size="sm" />
+                </div>
+              ) : segments.length === 0 ? (
+                <p className="text-sm text-gray-400 italic">No segments available</p>
+              ) : (
+                <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+                  <table className="min-w-full divide-y divide-gray-300">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Category
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Amount
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Percentage
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {segments.map((segment) => (
+                        <tr key={segment.id}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {segment.category}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {formatCurrency(segment.amount)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {segment.percentage}%
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
 
             <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">

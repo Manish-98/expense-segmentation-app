@@ -15,6 +15,7 @@ import com.expense.segmentation.dto.PagedExpenseResponse;
 import com.expense.segmentation.model.ExpenseStatus;
 import com.expense.segmentation.model.ExpenseType;
 import com.expense.segmentation.service.CustomUserDetailsService;
+import com.expense.segmentation.service.ExpenseSegmentService;
 import com.expense.segmentation.service.ExpenseService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
@@ -41,6 +42,8 @@ class ExpenseControllerTest {
     @Autowired private ObjectMapper objectMapper;
 
     @MockBean private ExpenseService expenseService;
+
+    @MockBean private ExpenseSegmentService expenseSegmentService;
 
     @MockBean private JwtTokenUtil jwtTokenUtil;
 

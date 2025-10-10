@@ -2,9 +2,11 @@ package com.expense.segmentation.controller;
 
 import com.expense.segmentation.dto.CreateExpenseRequest;
 import com.expense.segmentation.dto.ExpenseResponse;
+import com.expense.segmentation.dto.ExpenseSegmentResponse;
 import com.expense.segmentation.dto.PagedExpenseResponse;
 import com.expense.segmentation.model.ExpenseStatus;
 import com.expense.segmentation.model.ExpenseType;
+import com.expense.segmentation.service.ExpenseSegmentService;
 import com.expense.segmentation.service.ExpenseService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -31,6 +33,7 @@ import org.springframework.web.bind.annotation.*;
 public class ExpenseController {
 
     private final ExpenseService expenseService;
+    private final ExpenseSegmentService expenseSegmentService;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('EMPLOYEE', 'MANAGER', 'FINANCE', 'ADMIN')")
@@ -105,5 +108,15 @@ public class ExpenseController {
     public ResponseEntity<List<ExpenseResponse>> getExpensesByUser(@PathVariable UUID userId) {
         log.info("GET /expenses/user/{} - Retrieving expenses for user", userId);
         return ResponseEntity.ok(expenseService.getExpensesByUser(userId));
+    }
+
+    @GetMapping("/{id}/segments")
+    @PreAuthorize("hasAnyRole('EMPLOYEE', 'MANAGER', 'FINANCE', 'ADMIN')")
+    @Operation(
+            summary = "Get expense segments",
+            description = "Retrieves the segment breakdown for a specific expense")
+    public ResponseEntity<List<ExpenseSegmentResponse>> getExpenseSegments(@PathVariable UUID id) {
+        log.info("GET /expenses/{}/segments - Retrieving expense segments", id);
+        return ResponseEntity.ok(expenseSegmentService.getSegmentsByExpenseId(id));
     }
 }
