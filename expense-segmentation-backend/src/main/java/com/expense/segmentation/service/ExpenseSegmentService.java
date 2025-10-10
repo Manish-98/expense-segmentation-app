@@ -49,33 +49,6 @@ public class ExpenseSegmentService {
         return expenseSegmentMapper.toResponseList(segments);
     }
 
-    private List<ExpenseSegmentResponse> createMockSegments(Expense expense) {
-        BigDecimal totalAmount = expense.getAmount();
-
-        // Create mock segments with typical business expense categories
-        return List.of(
-                new ExpenseSegmentResponse(
-                        UUID.randomUUID(),
-                        "Travel",
-                        totalAmount.multiply(new BigDecimal("0.40")),
-                        new BigDecimal("40.00")),
-                new ExpenseSegmentResponse(
-                        UUID.randomUUID(),
-                        "Meals",
-                        totalAmount.multiply(new BigDecimal("0.30")),
-                        new BigDecimal("30.00")),
-                new ExpenseSegmentResponse(
-                        UUID.randomUUID(),
-                        "Supplies",
-                        totalAmount.multiply(new BigDecimal("0.20")),
-                        new BigDecimal("20.00")),
-                new ExpenseSegmentResponse(
-                        UUID.randomUUID(),
-                        "Other",
-                        totalAmount.multiply(new BigDecimal("0.10")),
-                        new BigDecimal("10.00")));
-    }
-
     @Transactional
     public List<ExpenseSegmentResponse> addExpenseSegment(
             UUID expenseId, CreateExpenseSegmentRequest request) {

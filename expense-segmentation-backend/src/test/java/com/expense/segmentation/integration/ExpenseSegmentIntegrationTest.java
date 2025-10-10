@@ -100,7 +100,7 @@ class ExpenseSegmentIntegrationTest {
 
     @Test
     @WithMockUser(roles = {"EMPLOYEE"})
-    void getExpenseSegments_WithEmployeeRole_ShouldReturnSegments() throws Exception {
+    void getExpenseSegments_WithEmployeeRole_ShouldReturnEmptyArray() throws Exception {
         mockMvc.perform(
                         get("/expenses/{id}/segments", testExpenseId)
                                 .with(csrf())
@@ -108,19 +108,12 @@ class ExpenseSegmentIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$.length()").value(4))
-                .andExpect(jsonPath("$[*].category").exists())
-                .andExpect(jsonPath("$[*].amount").exists())
-                .andExpect(jsonPath("$[*].percentage").exists())
-                .andExpect(jsonPath("$[?(@.category == 'Travel')].percentage").value(40.00))
-                .andExpect(jsonPath("$[?(@.category == 'Meals')].percentage").value(30.00))
-                .andExpect(jsonPath("$[?(@.category == 'Supplies')].percentage").value(20.00))
-                .andExpect(jsonPath("$[?(@.category == 'Other')].percentage").value(10.00));
+                .andExpect(jsonPath("$.length()").value(0));
     }
 
     @Test
     @WithMockUser(roles = {"MANAGER"})
-    void getExpenseSegments_WithManagerRole_ShouldReturnSegments() throws Exception {
+    void getExpenseSegments_WithManagerRole_ShouldReturnEmptyArray() throws Exception {
         mockMvc.perform(
                         get("/expenses/{id}/segments", testExpenseId)
                                 .with(csrf())
@@ -128,12 +121,12 @@ class ExpenseSegmentIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$.length()").value(4));
+                .andExpect(jsonPath("$.length()").value(0));
     }
 
     @Test
     @WithMockUser(roles = {"FINANCE"})
-    void getExpenseSegments_WithFinanceRole_ShouldReturnSegments() throws Exception {
+    void getExpenseSegments_WithFinanceRole_ShouldReturnEmptyArray() throws Exception {
         mockMvc.perform(
                         get("/expenses/{id}/segments", testExpenseId)
                                 .with(csrf())
@@ -141,12 +134,12 @@ class ExpenseSegmentIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$.length()").value(4));
+                .andExpect(jsonPath("$.length()").value(0));
     }
 
     @Test
     @WithMockUser(roles = {"ADMIN"})
-    void getExpenseSegments_WithAdminRole_ShouldReturnSegments() throws Exception {
+    void getExpenseSegments_WithAdminRole_ShouldReturnEmptyArray() throws Exception {
         mockMvc.perform(
                         get("/expenses/{id}/segments", testExpenseId)
                                 .with(csrf())
@@ -154,7 +147,7 @@ class ExpenseSegmentIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$.length()").value(4));
+                .andExpect(jsonPath("$.length()").value(0));
     }
 
     @Test
@@ -171,7 +164,7 @@ class ExpenseSegmentIntegrationTest {
 
     @Test
     @WithMockUser(roles = {"EMPLOYEE"})
-    void getExpenseSegments_WithValidExpenseId_ShouldReturnCorrectJsonStructure() throws Exception {
+    void getExpenseSegments_WithValidExpenseId_ShouldReturnEmptyArray() throws Exception {
         mockMvc.perform(
                         get("/expenses/{id}/segments", testExpenseId)
                                 .with(csrf())
@@ -179,13 +172,7 @@ class ExpenseSegmentIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$.length()").value(4))
-                .andExpect(jsonPath("$[0].id").exists())
-                .andExpect(jsonPath("$[0].category").isString())
-                .andExpect(jsonPath("$[0].amount").isNumber())
-                .andExpect(jsonPath("$[0].percentage").isNumber())
-                .andExpect(jsonPath("$[0].amount").value(40.00))
-                .andExpect(jsonPath("$[0].percentage").value(40.00));
+                .andExpect(jsonPath("$.length()").value(0));
     }
 
     @Test
@@ -219,7 +206,7 @@ class ExpenseSegmentIntegrationTest {
                                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$.length()").value(4));
+                .andExpect(jsonPath("$.length()").value(0));
 
         // Test second expense ID
         mockMvc.perform(
@@ -228,7 +215,7 @@ class ExpenseSegmentIntegrationTest {
                                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$.length()").value(4));
+                .andExpect(jsonPath("$.length()").value(0));
     }
 
     @Test

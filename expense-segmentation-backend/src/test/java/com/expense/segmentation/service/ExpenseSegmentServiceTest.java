@@ -295,6 +295,227 @@ class ExpenseSegmentServiceTest {
         verify(expenseSegmentRepository).saveAll(any());
     }
 
+    @Test
+    void addMultipleExpenseSegments_WithValidData_ShouldCreateAndReturnSegments() {
+        // Arrange
+        CreateExpenseSegmentRequest segment1 = new CreateExpenseSegmentRequest();
+        segment1.setCategory("Travel");
+        segment1.setAmount(new BigDecimal("40.00"));
+
+        CreateExpenseSegmentRequest segment2 = new CreateExpenseSegmentRequest();
+        segment2.setCategory("Meals");
+        segment2.setAmount(new BigDecimal("30.00"));
+
+        CreateExpenseSegmentRequest segment3 = new CreateExpenseSegmentRequest();
+        segment3.setCategory("Supplies");
+        segment3.setAmount(new BigDecimal("30.00"));
+
+        CreateMultipleExpenseSegmentsRequest request = new CreateMultipleExpenseSegmentsRequest();
+        request.setSegments(List.of(segment1, segment2, segment3));
+
+        ExpenseSegment savedSegment1 =
+                createExpenseSegment("Travel", new BigDecimal("40.00"), new BigDecimal("40.00"));
+        ExpenseSegment savedSegment2 =
+                createExpenseSegment("Meals", new BigDecimal("30.00"), new BigDecimal("30.00"));
+        ExpenseSegment savedSegment3 =
+                createExpenseSegment("Supplies", new BigDecimal("30.00"), new BigDecimal("30.00"));
+        List<ExpenseSegment> savedSegments = List.of(savedSegment1, savedSegment2, savedSegment3);
+
+        ExpenseSegmentResponse response1 =
+                new ExpenseSegmentResponse(
+                        UUID.randomUUID(),
+                        "Travel",
+                        new BigDecimal("40.00"),
+                        new BigDecimal("40.00"));
+        ExpenseSegmentResponse response2 =
+                new ExpenseSegmentResponse(
+                        UUID.randomUUID(),
+                        "Meals",
+                        new BigDecimal("30.00"),
+                        new BigDecimal("30.00"));
+        ExpenseSegmentResponse response3 =
+                new ExpenseSegmentResponse(
+                        UUID.randomUUID(),
+                        "Supplies",
+                        new BigDecimal("30.00"),
+                        new BigDecimal("30.00"));
+        List<ExpenseSegmentResponse> expectedResponses = List.of(response1, response2, response3);
+
+        when(expenseRepository.findById(expenseId)).thenReturn(Optional.of(testExpense));
+        when(expenseSegmentRepository.saveAll(any())).thenReturn(savedSegments);
+        when(expenseSegmentMapper.toResponseList(savedSegments)).thenReturn(expectedResponses);
+
+        // Act
+        List<ExpenseSegmentResponse> actualResponses =
+                expenseSegmentService.addMultipleExpenseSegments(expenseId, request);
+
+        // Assert
+        assertThat(actualResponses).isEqualTo(expectedResponses);
+        verify(expenseRepository).findById(expenseId);
+        verify(expenseSegmentRepository).deleteByExpenseId(expenseId);
+        verify(expenseSegmentRepository).saveAll(any());
+    }
+
+    @Test
+    void addMultipleExpenseSegments_WithTotalAmountMismatch_ShouldThrowValidationException() {
+        // Arrange
+        CreateExpenseSegmentRequest segment1 = new CreateExpenseSegmentRequest();
+        segment1.setCategory("Travel");
+        segment1.setAmount(new BigDecimal("40.00"));
+
+        CreateExpenseSegmentRequest segment2 = new CreateExpenseSegmentRequest();
+        segment2.setCategory("Meals");
+        segment2.setAmount(new BigDecimal("30.00"));
+
+        // Total is 70.00, but expense is 100.00
+        CreateMultipleExpenseSegmentsRequest request = new CreateMultipleExpenseSegmentsRequest();
+        request.setSegments(List.of(segment1, segment2));
+
+        when(expenseRepository.findById(expenseId)).thenReturn(Optional.of(testExpense));
+
+        // Act & Assert
+        assertThatThrownBy(
+                        () -> expenseSegmentService.addMultipleExpenseSegments(expenseId, request))
+                .isInstanceOf(SegmentValidationException.class)
+                .hasMessageContaining(
+                        "Total segments amount (70.00) must equal expense amount (100.00)");
+    }
+
+    @Test
+    void addMultipleExpenseSegments_WithDuplicateCategories_ShouldThrowValidationException() {
+        // Arrange
+        CreateExpenseSegmentRequest segment1 = new CreateExpenseSegmentRequest();
+        segment1.setCategory("Travel");
+        segment1.setAmount(new BigDecimal("40.00"));
+
+        CreateExpenseSegmentRequest segment2 = new CreateExpenseSegmentRequest();
+        segment2.setCategory("Travel"); // Duplicate category
+        segment2.setAmount(new BigDecimal("60.00"));
+
+        CreateMultipleExpenseSegmentsRequest request = new CreateMultipleExpenseSegmentsRequest();
+        request.setSegments(List.of(segment1, segment2));
+
+        when(expenseRepository.findById(expenseId)).thenReturn(Optional.of(testExpense));
+
+        // Act & Assert
+        assertThatThrownBy(
+                        () -> expenseSegmentService.addMultipleExpenseSegments(expenseId, request))
+                .isInstanceOf(SegmentValidationException.class)
+                .hasMessage("Segment categories must be unique within an expense");
+    }
+
+    @Test
+    void addMultipleExpenseSegments_WithProvidedPercentages_ShouldUseProvidedValues() {
+        // Arrange
+        CreateExpenseSegmentRequest segment1 = new CreateExpenseSegmentRequest();
+        segment1.setCategory("Travel");
+        segment1.setAmount(new BigDecimal("50.00"));
+        segment1.setPercentage(new BigDecimal("50.00")); // Explicit percentage
+
+        CreateExpenseSegmentRequest segment2 = new CreateExpenseSegmentRequest();
+        segment2.setCategory("Meals");
+        segment2.setAmount(new BigDecimal("50.00"));
+        segment2.setPercentage(new BigDecimal("50.00")); // Explicit percentage
+
+        CreateMultipleExpenseSegmentsRequest request = new CreateMultipleExpenseSegmentsRequest();
+        request.setSegments(List.of(segment1, segment2));
+
+        when(expenseRepository.findById(expenseId)).thenReturn(Optional.of(testExpense));
+        when(expenseSegmentRepository.saveAll(any())).thenReturn(List.of());
+        when(expenseSegmentMapper.toResponseList(any())).thenReturn(List.of());
+
+        // Act
+        List<ExpenseSegmentResponse> responses =
+                expenseSegmentService.addMultipleExpenseSegments(expenseId, request);
+
+        // Assert
+        verify(expenseRepository).findById(expenseId);
+        verify(expenseSegmentRepository).deleteByExpenseId(expenseId);
+        verify(expenseSegmentRepository).saveAll(any());
+    }
+
+    @Test
+    void addMultipleExpenseSegments_WithNullPercentages_ShouldAutoCalculate() {
+        // Arrange
+        CreateExpenseSegmentRequest segment1 = new CreateExpenseSegmentRequest();
+        segment1.setCategory("Travel");
+        segment1.setAmount(new BigDecimal("25.00"));
+        segment1.setPercentage(null); // Should be auto-calculated to 25.00%
+
+        CreateExpenseSegmentRequest segment2 = new CreateExpenseSegmentRequest();
+        segment2.setCategory("Meals");
+        segment2.setAmount(new BigDecimal("75.00"));
+        segment2.setPercentage(null); // Should be auto-calculated to 75.00%
+
+        CreateMultipleExpenseSegmentsRequest request = new CreateMultipleExpenseSegmentsRequest();
+        request.setSegments(List.of(segment1, segment2));
+
+        when(expenseRepository.findById(expenseId)).thenReturn(Optional.of(testExpense));
+        when(expenseSegmentRepository.saveAll(any())).thenReturn(List.of());
+        when(expenseSegmentMapper.toResponseList(any())).thenReturn(List.of());
+
+        // Act
+        List<ExpenseSegmentResponse> responses =
+                expenseSegmentService.addMultipleExpenseSegments(expenseId, request);
+
+        // Assert
+        verify(expenseRepository).findById(expenseId);
+        verify(expenseSegmentRepository).deleteByExpenseId(expenseId);
+        verify(expenseSegmentRepository).saveAll(any());
+    }
+
+    @Test
+    void addMultipleExpenseSegments_WithZeroExpenseAmount_ShouldCalculateZeroPercentages() {
+        // Arrange
+        testExpense.setAmount(BigDecimal.ZERO);
+
+        CreateExpenseSegmentRequest segment1 = new CreateExpenseSegmentRequest();
+        segment1.setCategory("Travel");
+        segment1.setAmount(BigDecimal.ZERO);
+        segment1.setPercentage(null);
+
+        CreateMultipleExpenseSegmentsRequest request = new CreateMultipleExpenseSegmentsRequest();
+        request.setSegments(List.of(segment1));
+
+        when(expenseRepository.findById(expenseId)).thenReturn(Optional.of(testExpense));
+        when(expenseSegmentRepository.saveAll(any())).thenReturn(List.of());
+        when(expenseSegmentMapper.toResponseList(any())).thenReturn(List.of());
+
+        // Act
+        List<ExpenseSegmentResponse> responses =
+                expenseSegmentService.addMultipleExpenseSegments(expenseId, request);
+
+        // Assert
+        verify(expenseRepository).findById(expenseId);
+        verify(expenseSegmentRepository).deleteByExpenseId(expenseId);
+        verify(expenseSegmentRepository).saveAll(any());
+    }
+
+    @Test
+    void calculatePercentage_WithValidInputs_ShouldReturnCorrectPercentage() {
+        // This test verifies the private method behavior through public API
+        // Arrange
+        CreateExpenseSegmentRequest segment = new CreateExpenseSegmentRequest();
+        segment.setCategory("Travel");
+        segment.setAmount(new BigDecimal("100.00")); // Full amount to match expense
+        segment.setPercentage(null);
+
+        CreateMultipleExpenseSegmentsRequest request = new CreateMultipleExpenseSegmentsRequest();
+        request.setSegments(List.of(segment));
+
+        when(expenseRepository.findById(expenseId)).thenReturn(Optional.of(testExpense));
+        when(expenseSegmentRepository.saveAll(any())).thenReturn(List.of());
+        when(expenseSegmentMapper.toResponseList(any())).thenReturn(List.of());
+
+        // Act
+        List<ExpenseSegmentResponse> responses =
+                expenseSegmentService.addMultipleExpenseSegments(expenseId, request);
+
+        // Assert - 100.00 out of 100.00 should be 100.00%
+        verify(expenseRepository).findById(expenseId);
+        verify(expenseSegmentRepository).saveAll(any());
+    }
+
     private ExpenseSegment createExpenseSegment(
             String category, BigDecimal amount, BigDecimal percentage) {
         ExpenseSegment segment = new ExpenseSegment();

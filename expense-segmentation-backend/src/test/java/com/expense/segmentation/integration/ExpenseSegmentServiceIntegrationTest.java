@@ -85,31 +85,13 @@ class ExpenseSegmentServiceIntegrationTest {
     }
 
     @Test
-    void getSegmentsByExpenseId_WithExistingExpenseAndNoSegments_ShouldReturnMockData() {
+    void getSegmentsByExpenseId_WithExistingExpenseAndNoSegments_ShouldReturnEmptyList() {
         // Act
         List<com.expense.segmentation.dto.ExpenseSegmentResponse> responses =
                 expenseSegmentService.getSegmentsByExpenseId(expenseId);
 
         // Assert
-        assertThat(responses).hasSize(4);
-        assertThat(responses)
-                .extracting("category")
-                .containsExactlyInAnyOrder("Travel", "Meals", "Supplies", "Other");
-        assertThat(responses)
-                .extracting("percentage")
-                .containsExactlyInAnyOrder(
-                        new BigDecimal("40.00"),
-                        new BigDecimal("30.00"),
-                        new BigDecimal("20.00"),
-                        new BigDecimal("10.00"));
-        assertThat(responses)
-                .extracting("amount")
-                .usingComparatorForType(BigDecimal::compareTo, BigDecimal.class)
-                .containsExactlyInAnyOrder(
-                        new BigDecimal("40.00"),
-                        new BigDecimal("30.00"),
-                        new BigDecimal("20.00"),
-                        new BigDecimal("10.00"));
+        assertThat(responses).isEmpty();
     }
 
     @Test
@@ -159,7 +141,7 @@ class ExpenseSegmentServiceIntegrationTest {
     }
 
     @Test
-    void getSegmentsByExpenseId_WithDifferentExpenseAmounts_ShouldReturnCorrectMockAmounts() {
+    void getSegmentsByExpenseId_WithDifferentExpenseAmounts_ShouldReturnEmptyList() {
         // Arrange
         testExpense.setAmount(new BigDecimal("200.00"));
         expenseRepository.save(testExpense);
@@ -169,19 +151,11 @@ class ExpenseSegmentServiceIntegrationTest {
                 expenseSegmentService.getSegmentsByExpenseId(expenseId);
 
         // Assert
-        assertThat(responses).hasSize(4);
-        assertThat(responses)
-                .extracting("amount")
-                .usingComparatorForType(BigDecimal::compareTo, BigDecimal.class)
-                .containsExactlyInAnyOrder(
-                        new BigDecimal("80.00"),
-                        new BigDecimal("60.00"),
-                        new BigDecimal("40.00"),
-                        new BigDecimal("20.00"));
+        assertThat(responses).isEmpty();
     }
 
     @Test
-    void getSegmentsByExpenseId_WithZeroExpenseAmount_ShouldReturnZeroMockAmounts() {
+    void getSegmentsByExpenseId_WithZeroExpenseAmount_ShouldReturnEmptyList() {
         // Arrange
         testExpense.setAmount(BigDecimal.ZERO);
         expenseRepository.save(testExpense);
@@ -191,16 +165,7 @@ class ExpenseSegmentServiceIntegrationTest {
                 expenseSegmentService.getSegmentsByExpenseId(expenseId);
 
         // Assert
-        assertThat(responses).hasSize(4);
-        assertThat(responses)
-                .allMatch(response -> response.getAmount().compareTo(BigDecimal.ZERO) == 0);
-        assertThat(responses)
-                .extracting("percentage")
-                .containsExactlyInAnyOrder(
-                        new BigDecimal("40.00"),
-                        new BigDecimal("30.00"),
-                        new BigDecimal("20.00"),
-                        new BigDecimal("10.00"));
+        assertThat(responses).isEmpty();
     }
 
     @Test
@@ -233,10 +198,7 @@ class ExpenseSegmentServiceIntegrationTest {
         assertThat(responses1.get(0).getCategory()).isEqualTo("Travel");
         assertThat(responses1.get(0).getAmount()).isEqualByComparingTo(new BigDecimal("60.00"));
 
-        assertThat(responses2).hasSize(4); // Mock data for expense with no segments
-        assertThat(responses2)
-                .extracting("category")
-                .containsExactlyInAnyOrder("Travel", "Meals", "Supplies", "Other");
+        assertThat(responses2).isEmpty(); // No segments for expense with no segments
     }
 
     @Test
