@@ -1,6 +1,8 @@
 package com.expense.segmentation.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -272,5 +274,88 @@ class ExpenseControllerTest {
 
         // When & Then
         mockMvc.perform(get("/expenses/user/{userId}", userId)).andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "EMPLOYEE")
+    void updateExpenseSegment_WithValidData_ShouldReturnOk() throws Exception {
+        // Given
+        UUID expenseId = UUID.randomUUID();
+        UUID segmentId = UUID.randomUUID();
+        String segmentRequest =
+                """
+            {
+                "category": "Updated Travel",
+                "amount": 150.00
+            }
+            """;
+
+        when(expenseSegmentService.updateExpenseSegment(eq(expenseId), eq(segmentId), any()))
+                .thenReturn(new com.expense.segmentation.dto.ExpenseSegmentResponse());
+
+        // When & Then
+        mockMvc.perform(
+                        put("/expenses/{id}/segments/{segmentId}", expenseId, segmentId)
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(segmentRequest))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "EMPLOYEE")
+    void updateExpenseSegment_WithInvalidData_ShouldReturnBadRequest() throws Exception {
+        // Given
+        UUID expenseId = UUID.randomUUID();
+        UUID segmentId = UUID.randomUUID();
+        String segmentRequest =
+                """
+            {
+                "category": "",
+                "amount": -50.00
+            }
+            """;
+
+        // When & Then
+        mockMvc.perform(
+                        put("/expenses/{id}/segments/{segmentId}", expenseId, segmentId)
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(segmentRequest))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(roles = "EMPLOYEE")
+    void deleteExpenseSegment_WithValidData_ShouldReturnNoContent() throws Exception {
+        // Given
+        UUID expenseId = UUID.randomUUID();
+        UUID segmentId = UUID.randomUUID();
+
+        // When & Then
+        mockMvc.perform(
+                        delete("/expenses/{id}/segments/{segmentId}", expenseId, segmentId)
+                                .with(csrf()))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @WithMockUser(roles = "EMPLOYEE")
+    void deleteExpenseSegment_WithInvalidIds_ShouldReturnNotFound() throws Exception {
+        // Given
+        UUID expenseId = UUID.randomUUID();
+        UUID segmentId = UUID.randomUUID();
+
+        doThrow(
+                        new com.expense.segmentation.exception.ResourceNotFoundException(
+                                "Segment not found"))
+                .when(expenseSegmentService)
+                .deleteExpenseSegment(expenseId, segmentId);
+
+        // When & Then
+        mockMvc.perform(
+                        delete("/expenses/{id}/segments/{segmentId}", expenseId, segmentId)
+                                .with(csrf()))
+                .andExpect(status().isNotFound());
     }
 }

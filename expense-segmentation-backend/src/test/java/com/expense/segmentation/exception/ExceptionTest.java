@@ -2,6 +2,7 @@ package com.expense.segmentation.exception;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 
 class ExceptionTest {
@@ -124,6 +125,77 @@ class ExceptionTest {
 
         // When
         InvalidOperationException exception = new InvalidOperationException(message, cause);
+
+        // Then
+        assertThat(exception.getMessage()).isEqualTo(message);
+        assertThat(exception.getCause()).isEqualTo(cause);
+    }
+
+    @Test
+    void segmentValidationException_WithMessage_ShouldCreateException() {
+        // Given
+        String message = "Segment validation failed";
+
+        // When
+        SegmentValidationException exception = new SegmentValidationException(message);
+
+        // Then
+        assertThat(exception.getMessage()).isEqualTo(message);
+    }
+
+    @Test
+    void segmentValidationException_WithMessageAndCause_ShouldCreateException() {
+        // Given
+        String message = "Segment validation failed";
+        Throwable cause = new RuntimeException("Root cause");
+
+        // When
+        SegmentValidationException exception = new SegmentValidationException(message, cause);
+
+        // Then
+        assertThat(exception.getMessage()).isEqualTo(message);
+        assertThat(exception.getCause()).isEqualTo(cause);
+    }
+
+    @Test
+    void segmentAmountExceedsExpenseException_WithAmounts_ShouldCreateException() {
+        // Given
+        BigDecimal segmentAmount = new BigDecimal("150.00");
+        BigDecimal expenseAmount = new BigDecimal("100.00");
+
+        // When
+        SegmentAmountExceedsExpenseException exception =
+                new SegmentAmountExceedsExpenseException(segmentAmount, expenseAmount);
+
+        // Then
+        assertThat(exception.getMessage())
+                .contains("150.00")
+                .contains("100.00")
+                .contains("exceeds");
+    }
+
+    @Test
+    void segmentAmountExceedsExpenseException_WithMessage_ShouldCreateException() {
+        // Given
+        String message = "Segment amount exceeds expense amount";
+
+        // When
+        SegmentAmountExceedsExpenseException exception =
+                new SegmentAmountExceedsExpenseException(message);
+
+        // Then
+        assertThat(exception.getMessage()).isEqualTo(message);
+    }
+
+    @Test
+    void segmentAmountExceedsExpenseException_WithMessageAndCause_ShouldCreateException() {
+        // Given
+        String message = "Segment amount exceeds expense amount";
+        Throwable cause = new RuntimeException("Root cause");
+
+        // When
+        SegmentAmountExceedsExpenseException exception =
+                new SegmentAmountExceedsExpenseException(message, cause);
 
         // Then
         assertThat(exception.getMessage()).isEqualTo(message);
