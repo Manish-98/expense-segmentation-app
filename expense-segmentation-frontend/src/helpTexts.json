@@ -1,0 +1,26 @@
+{
+  "expense": {
+    "title": "Expense",
+    "description": "Submit business expenses for reimbursement. Include receipts and proper categorization for faster processing."
+  },
+  "invoice": {
+    "title": "Invoice", 
+    "description": "Submit invoices for client billing. Include project details, hours worked, and supporting documentation."
+  },
+  "segment": {
+    "title": "Expense Segments",
+    "description": "Break down expenses into categories for better tracking and reporting. Total must equal the expense amount. Each segment represents a portion of the total expense."
+  },
+  "category": {
+    "title": "Category",
+    "description": "Select the appropriate category for this expense segment. Categories help organize expenses for reporting and tax purposes."
+  },
+  "amount": {
+    "title": "Amount",
+    "description": "Enter the monetary value for this expense segment. The total of all segments must equal the total expense amount."
+  },
+  "percentage": {
+    "title": "Percentage",
+    "description": "Automatically calculated based on the segment amount relative to the total expense. Shows what percentage this segment represents."
+  }
+}

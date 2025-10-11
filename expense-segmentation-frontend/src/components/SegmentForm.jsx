@@ -1,5 +1,7 @@
 
 
+import HelpTooltip from './HelpTooltip';
+
 const SegmentForm = ({ 
   segment, 
   index, 
@@ -8,13 +10,21 @@ const SegmentForm = ({
   onInputChange, 
   onAddRow, 
   onRemoveRow,
-  expenseAmount 
+  expenseAmount,
+  categories = []
 }) => {
+  const calculatePercentage = (amount) => {
+    if (!amount || !expenseAmount) return '0.00';
+    const percentage = (parseFloat(amount) / parseFloat(expenseAmount)) * 100;
+    return percentage.toFixed(2);
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
       <div className="space-y-1">
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-gray-700 flex items-center">
           Category
+          <HelpTooltip type="category" />
         </label>
         <select
           name="category"
@@ -24,19 +34,16 @@ const SegmentForm = ({
           required
         >
           <option value="">Select...</option>
-          <option value="Travel">Travel</option>
-          <option value="Meals">Meals</option>
-          <option value="Supplies">Supplies</option>
-          <option value="Entertainment">Entertainment</option>
-          <option value="Office">Office</option>
-          <option value="Training">Training</option>
-          <option value="Other">Other</option>
+          {categories.map(category => (
+            <option key={category} value={category}>{category}</option>
+          ))}
         </select>
       </div>
       
       <div className="space-y-1">
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-gray-700 flex items-center">
           Amount
+          <HelpTooltip type="amount" />
         </label>
         <input
           type="number"
@@ -53,11 +60,12 @@ const SegmentForm = ({
       </div>
       
       <div className="space-y-1">
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-gray-700 flex items-center">
           Percentage
+          <HelpTooltip type="percentage" />
         </label>
         <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 h-10 flex items-center">
-          {segment.percentage ? `${segment.percentage}%` : 'Auto-calculated'}
+          {segment.percentage ? `${segment.percentage}%` : calculatePercentage(segment.amount) + '%'}
         </div>
       </div>
       

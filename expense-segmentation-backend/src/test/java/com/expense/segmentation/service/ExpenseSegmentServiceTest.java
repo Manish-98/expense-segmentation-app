@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import com.expense.segmentation.dto.CreateExpenseSegmentRequest;
 import com.expense.segmentation.dto.CreateMultipleExpenseSegmentsRequest;
 import com.expense.segmentation.dto.ExpenseSegmentResponse;
+import com.expense.segmentation.exception.ResourceNotFoundException;
 import com.expense.segmentation.exception.SegmentValidationException;
 import com.expense.segmentation.mapper.ExpenseSegmentMapper;
 import com.expense.segmentation.model.Expense;
@@ -525,5 +526,197 @@ class ExpenseSegmentServiceTest {
         segment.setAmount(amount);
         segment.setPercentage(percentage);
         return segment;
+    }
+
+    @Test
+    void updateExpenseSegment_WithValidData_ShouldUpdateSegment() {
+        // Given
+        UUID segmentId = UUID.randomUUID();
+        CreateExpenseSegmentRequest request = new CreateExpenseSegmentRequest();
+        request.setCategory("Updated Travel");
+        request.setAmount(new BigDecimal("60.00"));
+
+        ExpenseSegment existingSegment =
+                createExpenseSegment("Travel", new BigDecimal("40.00"), new BigDecimal("40.00"));
+        existingSegment.setId(segmentId);
+
+        ExpenseSegment otherSegment =
+                createExpenseSegment("Meals", new BigDecimal("30.00"), new BigDecimal("30.00"));
+        otherSegment.setId(UUID.randomUUID());
+
+        List<ExpenseSegment> allSegments = List.of(existingSegment, otherSegment);
+        List<ExpenseSegment> otherSegments = List.of(otherSegment);
+
+        when(expenseRepository.findById(expenseId)).thenReturn(Optional.of(testExpense));
+        when(expenseSegmentRepository.findByExpenseIdAndId(expenseId, segmentId))
+                .thenReturn(Optional.of(existingSegment));
+        when(expenseSegmentRepository.findByExpenseIdOrderByCategory(expenseId))
+                .thenReturn(allSegments);
+        when(expenseSegmentRepository.save(any(ExpenseSegment.class))).thenReturn(existingSegment);
+        when(expenseSegmentMapper.toResponse(any(ExpenseSegment.class)))
+                .thenReturn(new ExpenseSegmentResponse());
+
+        // When
+        ExpenseSegmentResponse response =
+                expenseSegmentService.updateExpenseSegment(expenseId, segmentId, request);
+
+        // Then
+        assertThat(response).isNotNull();
+        verify(expenseSegmentRepository).save(existingSegment);
+        assertThat(existingSegment.getCategory()).isEqualTo("Updated Travel");
+        assertThat(existingSegment.getAmount()).isEqualTo(new BigDecimal("60.00"));
+        assertThat(existingSegment.getPercentage())
+                .isEqualTo(new BigDecimal("60.00")); // 60/100 * 100
+    }
+
+    @Test
+    void updateExpenseSegment_WithNonExistentSegment_ShouldThrowException() {
+        // Given
+        UUID segmentId = UUID.randomUUID();
+        CreateExpenseSegmentRequest request = new CreateExpenseSegmentRequest();
+        request.setCategory("Travel");
+        request.setAmount(new BigDecimal("100.00"));
+
+        when(expenseRepository.findById(expenseId)).thenReturn(Optional.of(testExpense));
+        when(expenseSegmentRepository.findByExpenseIdAndId(expenseId, segmentId))
+                .thenReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(
+                        () ->
+                                expenseSegmentService.updateExpenseSegment(
+                                        expenseId, segmentId, request))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Segment not found with ID: " + segmentId);
+    }
+
+    @Test
+    void updateExpenseSegment_WithAmountExceedingExpense_ShouldThrowException() {
+        // Given
+        UUID segmentId = UUID.randomUUID();
+        CreateExpenseSegmentRequest request = new CreateExpenseSegmentRequest();
+        request.setCategory("Travel");
+        request.setAmount(new BigDecimal("500.00")); // Exceeds expense amount
+
+        ExpenseSegment existingSegment =
+                createExpenseSegment("Travel", new BigDecimal("100.00"), new BigDecimal("25.00"));
+        existingSegment.setId(segmentId);
+
+        ExpenseSegment otherSegment =
+                createExpenseSegment("Meals", new BigDecimal("200.00"), new BigDecimal("50.00"));
+        otherSegment.setId(UUID.randomUUID());
+
+        List<ExpenseSegment> allSegments = List.of(existingSegment, otherSegment);
+
+        when(expenseRepository.findById(expenseId)).thenReturn(Optional.of(testExpense));
+        when(expenseSegmentRepository.findByExpenseIdAndId(expenseId, segmentId))
+                .thenReturn(Optional.of(existingSegment));
+        when(expenseSegmentRepository.findByExpenseIdOrderByCategory(expenseId))
+                .thenReturn(allSegments);
+
+        // When & Then
+        assertThatThrownBy(
+                        () ->
+                                expenseSegmentService.updateExpenseSegment(
+                                        expenseId, segmentId, request))
+                .isInstanceOf(SegmentValidationException.class)
+                .hasMessageContaining("exceeds expense amount");
+    }
+
+    @Test
+    void updateExpenseSegment_WithDuplicateCategory_ShouldThrowException() {
+        // Given
+        UUID segmentId = UUID.randomUUID();
+        CreateExpenseSegmentRequest request = new CreateExpenseSegmentRequest();
+        request.setCategory("Meals"); // Duplicate category
+        request.setAmount(new BigDecimal("50.00"));
+
+        ExpenseSegment existingSegment =
+                createExpenseSegment("Travel", new BigDecimal("40.00"), new BigDecimal("40.00"));
+        existingSegment.setId(segmentId);
+
+        ExpenseSegment otherSegment =
+                createExpenseSegment("Meals", new BigDecimal("30.00"), new BigDecimal("30.00"));
+        otherSegment.setId(UUID.randomUUID());
+
+        List<ExpenseSegment> allSegments = List.of(existingSegment, otherSegment);
+
+        when(expenseRepository.findById(expenseId)).thenReturn(Optional.of(testExpense));
+        when(expenseSegmentRepository.findByExpenseIdAndId(expenseId, segmentId))
+                .thenReturn(Optional.of(existingSegment));
+        when(expenseSegmentRepository.findByExpenseIdOrderByCategory(expenseId))
+                .thenReturn(allSegments);
+
+        // When & Then
+        assertThatThrownBy(
+                        () ->
+                                expenseSegmentService.updateExpenseSegment(
+                                        expenseId, segmentId, request))
+                .isInstanceOf(SegmentValidationException.class)
+                .hasMessageContaining("already exists");
+    }
+
+    @Test
+    void deleteExpenseSegment_WithValidData_ShouldDeleteSegment() {
+        // Given
+        UUID segmentId = UUID.randomUUID();
+        ExpenseSegment segmentToDelete =
+                createExpenseSegment("Travel", new BigDecimal("100.00"), new BigDecimal("25.00"));
+        segmentToDelete.setId(segmentId);
+
+        ExpenseSegment otherSegment =
+                createExpenseSegment("Meals", new BigDecimal("300.00"), new BigDecimal("75.00"));
+        otherSegment.setId(UUID.randomUUID());
+
+        List<ExpenseSegment> allSegments = List.of(segmentToDelete, otherSegment);
+
+        when(expenseRepository.findById(expenseId)).thenReturn(Optional.of(testExpense));
+        when(expenseSegmentRepository.findByExpenseIdAndId(expenseId, segmentId))
+                .thenReturn(Optional.of(segmentToDelete));
+        when(expenseSegmentRepository.findByExpenseIdOrderByCategory(expenseId))
+                .thenReturn(allSegments);
+
+        // When
+        expenseSegmentService.deleteExpenseSegment(expenseId, segmentId);
+
+        // Then
+        verify(expenseSegmentRepository).deleteByExpenseIdAndId(expenseId, segmentId);
+    }
+
+    @Test
+    void deleteExpenseSegment_WithNonExistentSegment_ShouldThrowException() {
+        // Given
+        UUID segmentId = UUID.randomUUID();
+
+        when(expenseRepository.findById(expenseId)).thenReturn(Optional.of(testExpense));
+        when(expenseSegmentRepository.findByExpenseIdAndId(expenseId, segmentId))
+                .thenReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> expenseSegmentService.deleteExpenseSegment(expenseId, segmentId))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Segment not found with ID: " + segmentId);
+    }
+
+    @Test
+    void deleteExpenseSegment_WithOnlySegment_ShouldThrowException() {
+        // Given
+        UUID segmentId = UUID.randomUUID();
+        ExpenseSegment onlySegment =
+                createExpenseSegment("Travel", new BigDecimal("400.00"), new BigDecimal("100.00"));
+        onlySegment.setId(segmentId);
+
+        List<ExpenseSegment> allSegments = List.of(onlySegment);
+
+        when(expenseRepository.findById(expenseId)).thenReturn(Optional.of(testExpense));
+        when(expenseSegmentRepository.findByExpenseIdAndId(expenseId, segmentId))
+                .thenReturn(Optional.of(onlySegment));
+        when(expenseSegmentRepository.findByExpenseIdOrderByCategory(expenseId))
+                .thenReturn(allSegments);
+
+        // When & Then
+        assertThatThrownBy(() -> expenseSegmentService.deleteExpenseSegment(expenseId, segmentId))
+                .isInstanceOf(SegmentValidationException.class)
+                .hasMessageContaining("At least one segment must remain");
     }
 }

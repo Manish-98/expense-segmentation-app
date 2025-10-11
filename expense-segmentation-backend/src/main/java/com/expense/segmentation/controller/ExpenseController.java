@@ -123,10 +123,12 @@ public class ExpenseController {
     }
 
     @PostMapping("/{id}/segments")
-    @PreAuthorize("hasAnyRole('EMPLOYEE', 'MANAGER', 'FINANCE', 'ADMIN')")
+    @PreAuthorize("@expenseAuthorizationService.canModifySegments(#id, authentication.name)")
     @Operation(
             summary = "Add expense segment",
-            description = "Adds a single segment to an expense. Only allowed if no segments exist.")
+            description =
+                    "Adds a single segment to an expense. Only allowed if no segments exist. Only"
+                            + " expense owners, finance, and admin can modify segments.")
     public ResponseEntity<List<ExpenseSegmentResponse>> addExpenseSegment(
             @PathVariable UUID id, @Valid @RequestBody CreateExpenseSegmentRequest request) {
         log.info("POST /expenses/{}/segments - Adding expense segment", id);
@@ -136,10 +138,12 @@ public class ExpenseController {
     }
 
     @PostMapping("/{id}/segments/batch")
-    @PreAuthorize("hasAnyRole('EMPLOYEE', 'MANAGER', 'FINANCE', 'ADMIN')")
+    @PreAuthorize("@expenseAuthorizationService.canModifySegments(#id, authentication.name)")
     @Operation(
             summary = "Add multiple expense segments",
-            description = "Adds multiple segments to an expense, replacing any existing segments.")
+            description =
+                    "Adds multiple segments to an expense, replacing any existing segments. Only"
+                            + " expense owners, finance, and admin can modify segments.")
     public ResponseEntity<List<ExpenseSegmentResponse>> addMultipleExpenseSegments(
             @PathVariable UUID id,
             @Valid @RequestBody CreateMultipleExpenseSegmentsRequest request) {
@@ -150,10 +154,12 @@ public class ExpenseController {
     }
 
     @PutMapping("/{id}/segments")
-    @PreAuthorize("hasAnyRole('EMPLOYEE', 'MANAGER', 'FINANCE', 'ADMIN')")
+    @PreAuthorize("@expenseAuthorizationService.canModifySegments(#id, authentication.name)")
     @Operation(
             summary = "Replace all expense segments",
-            description = "Replaces all existing segments with the provided segments.")
+            description =
+                    "Replaces all existing segments with the provided segments. Only expense"
+                            + " owners, finance, and admin can modify segments.")
     public ResponseEntity<List<ExpenseSegmentResponse>> replaceAllExpenseSegments(
             @PathVariable UUID id,
             @Valid @RequestBody CreateMultipleExpenseSegmentsRequest request) {
@@ -161,5 +167,36 @@ public class ExpenseController {
         List<ExpenseSegmentResponse> responses =
                 expenseSegmentService.replaceAllExpenseSegments(id, request);
         return ResponseEntity.ok(responses);
+    }
+
+    @PutMapping("/{id}/segments/{segmentId}")
+    @PreAuthorize("@expenseAuthorizationService.canModifySegments(#id, authentication.name)")
+    @Operation(
+            summary = "Update expense segment",
+            description =
+                    "Updates a specific segment within an expense. Only expense owners, finance,"
+                            + " and admin can modify segments.")
+    public ResponseEntity<ExpenseSegmentResponse> updateExpenseSegment(
+            @PathVariable UUID id,
+            @PathVariable UUID segmentId,
+            @Valid @RequestBody CreateExpenseSegmentRequest request) {
+        log.info("PUT /expenses/{}/segments/{} - Updating expense segment", id, segmentId);
+        ExpenseSegmentResponse response =
+                expenseSegmentService.updateExpenseSegment(id, segmentId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{id}/segments/{segmentId}")
+    @PreAuthorize("@expenseAuthorizationService.canModifySegments(#id, authentication.name)")
+    @Operation(
+            summary = "Delete expense segment",
+            description =
+                    "Deletes a specific segment from an expense. At least one segment must remain."
+                            + " Only expense owners, finance, and admin can modify segments.")
+    public ResponseEntity<Void> deleteExpenseSegment(
+            @PathVariable UUID id, @PathVariable UUID segmentId) {
+        log.info("DELETE /expenses/{}/segments/{} - Deleting expense segment", id, segmentId);
+        expenseSegmentService.deleteExpenseSegment(id, segmentId);
+        return ResponseEntity.noContent().build();
     }
 }

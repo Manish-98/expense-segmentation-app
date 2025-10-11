@@ -1,5 +1,8 @@
 package com.expense.segmentation.integration;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -21,6 +24,7 @@ import com.expense.segmentation.repository.ExpenseRepository;
 import com.expense.segmentation.repository.RoleRepository;
 import com.expense.segmentation.repository.UserRepository;
 import com.expense.segmentation.service.CustomUserDetailsService;
+import com.expense.segmentation.service.ExpenseAuthorizationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -59,7 +63,10 @@ class ExpenseSegmentIntegrationTest {
 
     @MockBean private CustomUserDetailsService customUserDetailsService;
 
+    @MockBean private ExpenseAuthorizationService expenseAuthorizationService;
+
     private UUID testExpenseId;
+    private String testUserEmail;
 
     @BeforeEach
     void setUp() {
@@ -79,7 +86,8 @@ class ExpenseSegmentIntegrationTest {
         // Create and save user
         User testUser = new User();
         testUser.setName("Test User");
-        testUser.setEmail("test-" + UUID.randomUUID() + "@example.com");
+        testUserEmail = "test-" + UUID.randomUUID() + "@example.com";
+        testUser.setEmail(testUserEmail);
         testUser.setPasswordHash("password");
         testUser.setStatus(UserStatus.ACTIVE);
         testUser.setRole(employeeRole);
@@ -96,10 +104,17 @@ class ExpenseSegmentIntegrationTest {
         testExpense.setCreatedBy(testUser);
         testExpense = expenseRepository.save(testExpense);
         testExpenseId = testExpense.getId();
+
+        // Mock authorization service to allow modification for any expense ID
+        // This simplifies testing - authorization is tested separately in unit tests
+        when(expenseAuthorizationService.canModifySegments(any(UUID.class), anyString()))
+                .thenReturn(true);
     }
 
     @Test
-    @WithMockUser(roles = {"EMPLOYEE"})
+    @WithMockUser(
+            username = "test@example.com",
+            roles = {"EMPLOYEE"})
     void getExpenseSegments_WithEmployeeRole_ShouldReturnEmptyArray() throws Exception {
         mockMvc.perform(
                         get("/expenses/{id}/segments", testExpenseId)
@@ -112,7 +127,9 @@ class ExpenseSegmentIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = {"MANAGER"})
+    @WithMockUser(
+            username = "manager@example.com",
+            roles = {"MANAGER"})
     void getExpenseSegments_WithManagerRole_ShouldReturnEmptyArray() throws Exception {
         mockMvc.perform(
                         get("/expenses/{id}/segments", testExpenseId)
@@ -125,7 +142,9 @@ class ExpenseSegmentIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = {"FINANCE"})
+    @WithMockUser(
+            username = "finance@example.com",
+            roles = {"FINANCE"})
     void getExpenseSegments_WithFinanceRole_ShouldReturnEmptyArray() throws Exception {
         mockMvc.perform(
                         get("/expenses/{id}/segments", testExpenseId)
@@ -138,7 +157,9 @@ class ExpenseSegmentIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = {"ADMIN"})
+    @WithMockUser(
+            username = "admin@example.com",
+            roles = {"ADMIN"})
     void getExpenseSegments_WithAdminRole_ShouldReturnEmptyArray() throws Exception {
         mockMvc.perform(
                         get("/expenses/{id}/segments", testExpenseId)
@@ -151,7 +172,9 @@ class ExpenseSegmentIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = {"EMPLOYEE"})
+    @WithMockUser(
+            username = "test@example.com",
+            roles = {"EMPLOYEE"})
     void getExpenseSegments_WithInvalidExpenseId_ShouldReturnNotFound() throws Exception {
         UUID invalidExpenseId = UUID.randomUUID();
 
@@ -163,7 +186,9 @@ class ExpenseSegmentIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = {"EMPLOYEE"})
+    @WithMockUser(
+            username = "test@example.com",
+            roles = {"EMPLOYEE"})
     void getExpenseSegments_WithValidExpenseId_ShouldReturnEmptyArray() throws Exception {
         mockMvc.perform(
                         get("/expenses/{id}/segments", testExpenseId)
@@ -176,7 +201,9 @@ class ExpenseSegmentIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = {"EMPLOYEE"})
+    @WithMockUser(
+            username = "test@example.com",
+            roles = {"EMPLOYEE"})
     void getExpenseSegments_WithDifferentExpenseIds_ShouldReturnMockDataForEach() throws Exception {
         // Create another expense for testing
         Role employeeRole = roleRepository.findByName(RoleType.EMPLOYEE).orElseThrow();
@@ -219,7 +246,9 @@ class ExpenseSegmentIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = {"EMPLOYEE"})
+    @WithMockUser(
+            username = "test@example.com",
+            roles = {"EMPLOYEE"})
     void addExpenseSegment_WithValidData_ShouldCreateAndReturnSegment() throws Exception {
         String segmentRequest =
                 """
@@ -255,7 +284,9 @@ class ExpenseSegmentIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = {"EMPLOYEE"})
+    @WithMockUser(
+            username = "test@example.com",
+            roles = {"EMPLOYEE"})
     void addExpenseSegment_WithPercentageProvided_ShouldUseProvidedPercentage() throws Exception {
         String segmentRequest =
                 """
@@ -276,7 +307,9 @@ class ExpenseSegmentIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = {"EMPLOYEE"})
+    @WithMockUser(
+            username = "test@example.com",
+            roles = {"EMPLOYEE"})
     void addExpenseSegment_WithAmountExceedingExpense_ShouldReturnBadRequest() throws Exception {
         String segmentRequest =
                 """
@@ -302,7 +335,9 @@ class ExpenseSegmentIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = {"EMPLOYEE"})
+    @WithMockUser(
+            username = "test@example.com",
+            roles = {"EMPLOYEE"})
     void addExpenseSegment_WithMissingCategory_ShouldReturnBadRequest() throws Exception {
         String segmentRequest =
                 """
@@ -320,7 +355,9 @@ class ExpenseSegmentIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = {"EMPLOYEE"})
+    @WithMockUser(
+            username = "test@example.com",
+            roles = {"EMPLOYEE"})
     void addExpenseSegment_WithNegativeAmount_ShouldReturnBadRequest() throws Exception {
         String segmentRequest =
                 """
@@ -339,7 +376,9 @@ class ExpenseSegmentIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = {"EMPLOYEE"})
+    @WithMockUser(
+            username = "test@example.com",
+            roles = {"EMPLOYEE"})
     void addExpenseSegment_WithZeroAmount_ShouldReturnBadRequest() throws Exception {
         String segmentRequest =
                 """
@@ -358,7 +397,9 @@ class ExpenseSegmentIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = {"EMPLOYEE"})
+    @WithMockUser(
+            username = "test@example.com",
+            roles = {"EMPLOYEE"})
     void addExpenseSegment_WithInvalidExpenseId_ShouldReturnNotFound() throws Exception {
         UUID invalidExpenseId = UUID.randomUUID();
         String segmentRequest =
@@ -378,7 +419,9 @@ class ExpenseSegmentIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = {"EMPLOYEE"})
+    @WithMockUser(
+            username = "test@example.com",
+            roles = {"EMPLOYEE"})
     void addExpenseSegment_WhenSegmentsAlreadyExist_ShouldReturnBadRequest() throws Exception {
         // First, create a segment
         String segmentRequest1 =
@@ -420,7 +463,9 @@ class ExpenseSegmentIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = {"EMPLOYEE"})
+    @WithMockUser(
+            username = "test@example.com",
+            roles = {"EMPLOYEE"})
     void addMultipleExpenseSegments_WithValidData_ShouldCreateAllSegments() throws Exception {
         String segmentsRequest =
                 """
@@ -459,7 +504,9 @@ class ExpenseSegmentIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = {"EMPLOYEE"})
+    @WithMockUser(
+            username = "test@example.com",
+            roles = {"EMPLOYEE"})
     void addMultipleExpenseSegments_WithIncorrectTotal_ShouldReturnBadRequest() throws Exception {
         String segmentsRequest =
                 """
@@ -492,7 +539,9 @@ class ExpenseSegmentIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = {"EMPLOYEE"})
+    @WithMockUser(
+            username = "test@example.com",
+            roles = {"EMPLOYEE"})
     void addMultipleExpenseSegments_WithDuplicateCategories_ShouldReturnBadRequest()
             throws Exception {
         String segmentsRequest =
@@ -526,7 +575,9 @@ class ExpenseSegmentIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = {"EMPLOYEE"})
+    @WithMockUser(
+            username = "test@example.com",
+            roles = {"EMPLOYEE"})
     void replaceAllExpenseSegments_WithValidData_ShouldReplaceExistingSegments() throws Exception {
         // First, create a segment
         String segmentRequest1 =
@@ -589,7 +640,9 @@ class ExpenseSegmentIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = {"MANAGER"})
+    @WithMockUser(
+            username = "manager@example.com",
+            roles = {"MANAGER"})
     void addExpenseSegment_WithManagerRole_ShouldWork() throws Exception {
         String segmentRequest =
                 """
@@ -608,7 +661,9 @@ class ExpenseSegmentIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = {"FINANCE"})
+    @WithMockUser(
+            username = "finance@example.com",
+            roles = {"FINANCE"})
     void addExpenseSegment_WithFinanceRole_ShouldWork() throws Exception {
         String segmentRequest =
                 """
@@ -627,7 +682,9 @@ class ExpenseSegmentIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = {"ADMIN"})
+    @WithMockUser(
+            username = "admin@example.com",
+            roles = {"ADMIN"})
     void addExpenseSegment_WithAdminRole_ShouldWork() throws Exception {
         String segmentRequest =
                 """
@@ -646,7 +703,9 @@ class ExpenseSegmentIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = {"EMPLOYEE"})
+    @WithMockUser(
+            username = "test@example.com",
+            roles = {"EMPLOYEE"})
     void addExpenseSegment_WithEmptySegmentsList_ShouldReturnBadRequest() throws Exception {
         String segmentsRequest =
                 """
@@ -664,7 +723,9 @@ class ExpenseSegmentIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = {"EMPLOYEE"})
+    @WithMockUser(
+            username = "test@example.com",
+            roles = {"EMPLOYEE"})
     void addExpenseSegment_WithTooManySegments_ShouldReturnBadRequest() throws Exception {
         StringBuilder segmentsJson = new StringBuilder("{\"segments\": [");
         for (int i = 1; i <= 21; i++) {

@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import expenseService from '../api/expenseService';
 import attachmentService from '../api/attachmentService';
 import { expenseSegmentService } from '../api/expenseSegmentService';
+import { categoryService } from '../api/categoryService';
 import PageLayout from '../components/Layout/PageLayout';
 import PageContainer from '../components/Layout/PageContainer';
 import Card from '../components/Layout/Card';
@@ -15,8 +16,11 @@ import Button from '../components/Button';
 import FileUpload from '../components/FileUpload';
 import Modal from '../components/Modal';
 import SegmentForm from '../components/SegmentForm';
+import SegmentDisplay from '../components/SegmentDisplay';
+import HelpTooltip from '../components/HelpTooltip';
 import { useExpenseBadges } from '../hooks/useExpenseBadges';
 import { useFormatters } from '../hooks/useFormatters';
+import usePermissions from '../hooks/usePermissions';
 
 const ExpenseDetailPage = () => {
   const { user } = useAuth();
@@ -44,9 +48,20 @@ const ExpenseDetailPage = () => {
   }]);
   const [segmentFormError, setSegmentFormError] = useState(null);
   const [savingSegment, setSavingSegment] = useState(false);
+  
+  // Edit segment state
+  const [editingSegmentId, setEditingSegmentId] = useState(null);
+  const [editSegmentForm, setEditSegmentForm] = useState({});
+  const [savingEditSegment, setSavingEditSegment] = useState(false);
+  const [editSegmentError, setEditSegmentError] = useState(null);
+  
+  // Categories for dropdown
+  const [categories, setCategories] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
 
   const { getStatusVariant, getTypeVariant } = useExpenseBadges();
   const { formatCurrency, formatDate, formatDateTime } = useFormatters();
+  const { canModifySegments, canUploadAttachments, canDeleteAttachments } = usePermissions();
 
   const fetchAttachments = useCallback(async () => {
     setLoadingAttachments(true);
@@ -72,6 +87,20 @@ const ExpenseDetailPage = () => {
     }
   }, [id]);
 
+  const fetchCategories = useCallback(async () => {
+    setLoadingCategories(true);
+    try {
+      const categoryData = await categoryService.getAllCategories();
+      setCategories(categoryData.map(cat => cat.name));
+    } catch (err) {
+      console.error('Failed to fetch categories:', err);
+      // Fallback to hardcoded categories if API fails
+      setCategories(['Travel', 'Meals', 'Supplies', 'Entertainment', 'Office', 'Training', 'Other']);
+    } finally {
+      setLoadingCategories(false);
+    }
+  }, []);
+
   useEffect(() => {
     const fetchExpense = async () => {
       setLoading(true);
@@ -80,9 +109,10 @@ const ExpenseDetailPage = () => {
       try {
         const data = await expenseService.getExpenseById(id);
         setExpense(data);
-        // Fetch attachments and segments
+        // Fetch attachments, segments, and categories
         fetchAttachments();
         fetchSegments();
+        fetchCategories();
       } catch (err) {
         console.error('Failed to fetch expense:', err);
         setError(err.response?.data?.message || 'Failed to load expense details');
@@ -94,7 +124,7 @@ const ExpenseDetailPage = () => {
     if (id) {
       fetchExpense();
     }
-  }, [id, fetchAttachments, fetchSegments]);
+  }, [id, fetchAttachments, fetchSegments, fetchCategories]);
 
   const handleFileSelect = (file) => {
     setSelectedFile(file);
@@ -274,6 +304,79 @@ const ExpenseDetailPage = () => {
     setShowAddSegment(false);
   };
 
+  // Edit segment functions
+  const handleEditSegment = (segmentId) => {
+    const segment = segments.find(s => s.id === segmentId);
+    if (segment) {
+      setEditingSegmentId(segmentId);
+      setEditSegmentForm({
+        category: segment.category,
+        amount: segment.amount.toString()
+      });
+      setEditSegmentError(null);
+    }
+  };
+
+  const handleEditSegmentChange = (segmentId, e) => {
+    const { name, value } = e.target;
+    setEditSegmentForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    setEditSegmentError(null);
+  };
+
+  const handleSaveEditSegment = async (segmentId, formData) => {
+    if (!formData.category.trim() || !formData.amount || parseFloat(formData.amount) <= 0) {
+      setEditSegmentError('Category and amount are required');
+      return;
+    }
+
+    if (parseFloat(formData.amount) > expense.amount) {
+      setEditSegmentError(`Amount cannot exceed total expense amount (${formatCurrency(expense.amount)})`);
+      return;
+    }
+
+    setSavingEditSegment(true);
+    setEditSegmentError(null);
+
+    try {
+      await expenseSegmentService.updateExpenseSegment(id, segmentId, {
+        category: formData.category.trim(),
+        amount: parseFloat(formData.amount)
+      });
+      
+      setEditingSegmentId(null);
+      setEditSegmentForm({});
+      fetchSegments();
+    } catch (err) {
+      console.error('Failed to update segment:', err);
+      setEditSegmentError(err.response?.data?.message || 'Failed to update segment');
+    } finally {
+      setSavingEditSegment(false);
+    }
+  };
+
+  const handleCancelEditSegment = () => {
+    setEditingSegmentId(null);
+    setEditSegmentForm({});
+    setEditSegmentError(null);
+  };
+
+  const handleDeleteSegment = async (segmentId) => {
+    if (!confirm('Are you sure you want to delete this segment? At least one segment must remain.')) {
+      return;
+    }
+
+    try {
+      await expenseSegmentService.deleteExpenseSegment(id, segmentId);
+      fetchSegments();
+    } catch (err) {
+      console.error('Failed to delete segment:', err);
+      setError(err.response?.data?.message || 'Failed to delete segment');
+    }
+  };
+
   if (loading) {
     return (
       <PageLayout>
@@ -399,8 +502,11 @@ const ExpenseDetailPage = () => {
 
             <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
               <div className="flex justify-between items-center mb-4">
-                <h4 className="text-sm font-medium text-gray-900">Expense Segments</h4>
-                {!showAddSegment && (
+                <div className="flex items-center">
+                  <h4 className="text-sm font-medium text-gray-900">Expense Segments</h4>
+                  <HelpTooltip type="segment" />
+                </div>
+                {!showAddSegment && canModifySegments(expense) && (
                   <Button
                     size="sm"
                     onClick={() => setShowAddSegment(true)}
@@ -435,19 +541,20 @@ const ExpenseDetailPage = () => {
                   )}
                   
                   <div className="space-y-3 mb-4">
-                    {segmentForms.map((form, index) => (
-                      <SegmentForm
-                        key={form.id}
-                        segment={form}
-                        index={index}
-                        isLast={index === segmentForms.length - 1}
-                        canRemove={segmentForms.length > 1}
-                        onInputChange={handleSegmentInputChange}
-                        onAddRow={addSegmentRow}
-                        onRemoveRow={removeSegmentRow}
-                        expenseAmount={expense.amount}
-                      />
-                    ))}
+                     {segmentForms.map((form, index) => (
+                       <SegmentForm
+                         key={form.id}
+                         segment={form}
+                         index={index}
+                         isLast={index === segmentForms.length - 1}
+                         canRemove={segmentForms.length > 1}
+                         onInputChange={handleSegmentInputChange}
+                         onAddRow={addSegmentRow}
+                         onRemoveRow={removeSegmentRow}
+                         expenseAmount={expense.amount}
+                         categories={categories}
+                       />
+                     ))}
                   </div>
                   
                   <div className="text-sm text-gray-600 mb-3 space-y-1">
@@ -476,43 +583,36 @@ const ExpenseDetailPage = () => {
                     </Button>
                   </div>
                 </div>
-              ) : segments.length === 0 ? (
+               ) : segments.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-sm text-gray-400 italic mb-4">No segments available</p>
                   <p className="text-xs text-gray-500">Click &quot;Add Segment&quot; to start categorizing this expense</p>
                 </div>
               ) : (
-                <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-                  <table className="min-w-full divide-y divide-gray-300">
-                    <thead className="bg-gray-100">
-                      <tr>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Category
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Amount
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Percentage
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {segments.map((segment) => (
-                        <tr key={segment.id}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {segment.category}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {formatCurrency(segment.amount)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {segment.percentage}%
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="space-y-3">
+                  {editSegmentError && (
+                    <Alert
+                      type="error"
+                      message={editSegmentError}
+                      onClose={() => setEditSegmentError(null)}
+                    />
+                  )}
+                  
+                  {segments.map((segment) => (
+                    <SegmentDisplay
+                      key={segment.id}
+                      segment={segment}
+                      isEditing={editingSegmentId === segment.id}
+                      onEdit={handleEditSegment}
+                      onSave={handleSaveEditSegment}
+                      onCancel={handleCancelEditSegment}
+                      onDelete={handleDeleteSegment}
+                      onInputChange={handleEditSegmentChange}
+                      expenseAmount={expense.amount}
+                      categories={categories}
+                      canModify={canModifySegments(expense)}
+                    />
+                  ))}
                 </div>
               )}
             </div>
@@ -520,7 +620,7 @@ const ExpenseDetailPage = () => {
             <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
               <div className="flex justify-between items-center mb-4">
                 <h4 className="text-sm font-medium text-gray-900">Attachments</h4>
-                {(user.id === expense.createdById || ['FINANCE', 'ADMIN'].includes(user.role)) && (
+                {canUploadAttachments(expense) && (
                   <Button
                     size="sm"
                     onClick={() => setShowUploadModal(true)}
@@ -567,25 +667,24 @@ const ExpenseDetailPage = () => {
                           </p>
                         </div>
                       </div>
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() =>
-                            handleDownload(attachment.id, attachment.originalFilename)
-                          }
-                          className="text-blue-600 hover:text-blue-800 text-sm"
-                        >
-                          Download
-                        </button>
-                        {(user.id === attachment.uploadedBy ||
-                          ['FINANCE', 'ADMIN'].includes(user.role)) && (
-                          <button
-                            onClick={() => handleDelete(attachment.id)}
-                            className="text-red-600 hover:text-red-800 text-sm"
-                          >
-                            Delete
-                          </button>
-                        )}
-                      </div>
+                       <div className="flex space-x-2">
+                         <button
+                           onClick={() =>
+                             handleDownload(attachment.id, attachment.originalFilename)
+                           }
+                           className="text-blue-600 hover:text-blue-800 text-sm"
+                         >
+                           Download
+                         </button>
+                         {canDeleteAttachments(attachment) && (
+                           <button
+                             onClick={() => handleDelete(attachment.id)}
+                             className="text-red-600 hover:text-red-800 text-sm"
+                           >
+                             Delete
+                           </button>
+                         )}
+                       </div>
                     </div>
                   ))}
                 </div>

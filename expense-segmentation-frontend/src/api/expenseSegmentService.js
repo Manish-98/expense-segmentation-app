@@ -19,5 +19,14 @@ export const expenseSegmentService = {
   replaceAllExpenseSegments: async (expenseId, segmentsData) => {
     const response = await axiosClient.put(`/expenses/${expenseId}/segments`, segmentsData);
     return response.data;
+  },
+
+  updateExpenseSegment: async (expenseId, segmentId, segmentData) => {
+    const response = await axiosClient.put(`/expenses/${expenseId}/segments/${segmentId}`, segmentData);
+    return response.data;
+  },
+
+  deleteExpenseSegment: async (expenseId, segmentId) => {
+    await axiosClient.delete(`/expenses/${expenseId}/segments/${segmentId}`);
   }
 };

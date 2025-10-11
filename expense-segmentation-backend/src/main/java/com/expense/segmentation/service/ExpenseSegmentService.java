@@ -148,6 +148,115 @@ public class ExpenseSegmentService {
         return addMultipleExpenseSegments(expenseId, request);
     }
 
+    @Transactional
+    public ExpenseSegmentResponse updateExpenseSegment(
+            UUID expenseId, UUID segmentId, CreateExpenseSegmentRequest request) {
+        log.debug("Updating segment {} for expense ID: {}", segmentId, expenseId);
+
+        // Verify expense exists
+        Expense expense =
+                expenseRepository
+                        .findById(expenseId)
+                        .orElseThrow(
+                                () ->
+                                        new ResourceNotFoundException(
+                                                "Expense not found with ID: " + expenseId));
+
+        // Find the specific segment
+        ExpenseSegment segment =
+                expenseSegmentRepository
+                        .findByExpenseIdAndId(expenseId, segmentId)
+                        .orElseThrow(
+                                () ->
+                                        new ResourceNotFoundException(
+                                                "Segment not found with ID: " + segmentId));
+
+        // Get all other segments to validate total amount
+        List<ExpenseSegment> otherSegments =
+                expenseSegmentRepository.findByExpenseIdOrderByCategory(expenseId).stream()
+                        .filter(s -> !s.getId().equals(segmentId))
+                        .toList();
+
+        // Calculate total amount of other segments
+        BigDecimal otherSegmentsTotal =
+                otherSegments.stream()
+                        .map(ExpenseSegment::getAmount)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Validate updated segment amount doesn't exceed expense amount
+        BigDecimal newTotal = otherSegmentsTotal.add(request.getAmount());
+        if (newTotal.compareTo(expense.getAmount()) > 0) {
+            throw new SegmentValidationException(
+                    String.format(
+                            "Updated segment amount (%s) plus other segments (%s) exceeds expense"
+                                    + " amount (%s)",
+                            request.getAmount().toPlainString(),
+                            otherSegmentsTotal.toPlainString(),
+                            expense.getAmount().toPlainString()));
+        }
+
+        // Check for duplicate categories (excluding current segment)
+        String newCategory = request.getCategory().trim().toLowerCase();
+        boolean categoryExists =
+                otherSegments.stream()
+                        .anyMatch(s -> s.getCategory().trim().toLowerCase().equals(newCategory));
+        if (categoryExists) {
+            throw new SegmentValidationException(
+                    "Segment category '" + request.getCategory().trim() + "' already exists");
+        }
+
+        // Calculate percentage if not provided
+        BigDecimal percentage = request.getPercentage();
+        if (percentage == null) {
+            percentage = calculatePercentage(request.getAmount(), expense.getAmount());
+        }
+
+        // Update the segment
+        segment.setCategory(request.getCategory().trim());
+        segment.setAmount(request.getAmount());
+        segment.setPercentage(percentage);
+
+        segment = expenseSegmentRepository.save(segment);
+        log.info("Updated segment: {} for expense: {}", segment.getId(), expenseId);
+
+        return expenseSegmentMapper.toResponse(segment);
+    }
+
+    @Transactional
+    public void deleteExpenseSegment(UUID expenseId, UUID segmentId) {
+        log.debug("Deleting segment {} for expense ID: {}", segmentId, expenseId);
+
+        // Verify expense exists
+        Expense expense =
+                expenseRepository
+                        .findById(expenseId)
+                        .orElseThrow(
+                                () ->
+                                        new ResourceNotFoundException(
+                                                "Expense not found with ID: " + expenseId));
+
+        // Find the specific segment
+        ExpenseSegment segment =
+                expenseSegmentRepository
+                        .findByExpenseIdAndId(expenseId, segmentId)
+                        .orElseThrow(
+                                () ->
+                                        new ResourceNotFoundException(
+                                                "Segment not found with ID: " + segmentId));
+
+        // Check if this is the only segment
+        List<ExpenseSegment> allSegments =
+                expenseSegmentRepository.findByExpenseIdOrderByCategory(expenseId);
+        if (allSegments.size() == 1) {
+            throw new SegmentValidationException(
+                    "Cannot delete the only segment. At least one segment must remain.");
+        }
+
+        // Delete the segment
+        expenseSegmentRepository.deleteByExpenseIdAndId(expenseId, segmentId);
+        log.info("Deleted segment: {} for expense: {}", segmentId, expenseId);
+    }
+
     private void validateSegmentAmount(BigDecimal expenseAmount, BigDecimal segmentAmount) {
         if (segmentAmount.compareTo(expenseAmount) > 0) {
             throw new SegmentAmountExceedsExpenseException(segmentAmount, expenseAmount);
